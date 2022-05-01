@@ -37,8 +37,8 @@
 // the results given by the FORTRAN implementation of Magneto 1.2, using
 // the test file mag.txt with a user norm of 0.569."
 
-int main() {
 
+double* read_data_from_file(int* number_of_lines) {
     int nlines = 0;
     char buf[120];
 
@@ -67,10 +67,15 @@ int main() {
         D[nlines * 8 + i] = 2.0 * z;
         D[nlines * 9 + i] = 1.0;
     }
-
     fclose(fp);
 
-    // allocate memory for matrix S
+    *number_of_lines = nlines;
+    return D;
+}
+
+int main() {
+    int nlines = 0;
+    double* D = read_data_from_file(&nlines);
 
     double S[10 * 10];
 
@@ -142,7 +147,6 @@ int main() {
     double S22_1[4 * 4];
 
     for (int i = 0; i < 16; i++)
-
         S22_1[i] = S22[i];
 
     Choleski_LU_Decomposition(S22_1, 4);
@@ -347,8 +351,5 @@ int main() {
     for (int i = 0; i < 3; i++)
         printf("%lf %lf %lf\r\n", A_1[i * 3], A_1[i * 3 + 1], A_1[i * 3 + 2]);
 
-
-
     return 0;
-
 }
