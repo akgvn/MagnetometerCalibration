@@ -41,27 +41,19 @@ int main() {
 
     int nlines = 0;
     char buf[120];
-    double* D, * S, * C, * S11, * S12, * S12t, * S22, * S22_1, * S22a, * S22b, * SS, * E, * d, * U, * SSS;
-    double* eigen_real, * eigen_imag, * v1, * v2, * v, * Q, * Q_1, * B, * QB, J, hmb, * SSSS;
-    int * p;
-    int i, index;
-    double maxval, norm, btqb, * eigen_real3, * eigen_imag3, * Dz, * vdz, * SQ, * A_1, hm, norm1, norm2, norm3;
-    double x, y, z;
 
-    FILE * fp;
-
-    fp = fopen("mag.txt", "r");
-
+    FILE* fp = fopen("mag.txt", "r");
     while (fgets(buf, 100, fp) != NULL)
         nlines++;
 
     rewind(fp);
 
-    D = (double*) malloc(10 * nlines * sizeof(double));
+    double* D = (double*) malloc(10 * nlines * sizeof(double));
 
-    for (i = 0; i < nlines; i++) {
+    for (int i = 0; i < nlines; i++) {
         fgets(buf, 100, fp);
 
+        double x, y, z;
         sscanf(buf, "%lf\t%lf\t%lf", &x, &y, &z);
 
         D[i] = x * x;
@@ -80,13 +72,14 @@ int main() {
 
     // allocate memory for matrix S
 
-    S = (double*) malloc(10 * 10 * sizeof(double));
+    double S[10 * 10];
 
     Matrix_x_Its_Transpose(S, D, 10, nlines);
+    free(D);
 
     // Create pre-inverted constraint matrix C
 
-    C = (double*) malloc(6 * 6 * sizeof(double));
+    double C[6 * 6];
 
     C[0] = 0.0;
     C[1] = 0.5;
@@ -130,25 +123,25 @@ int main() {
     C[34] = 0.0;
     C[35] = -0.25;
 
-    S11 = (double*) malloc(6 * 6 * sizeof(double));
+    double S11[6 * 6];
 
     Get_Submatrix(S11, 6, 6, S, 10, 0, 0);
 
-    S12 = (double*) malloc(6 * 4 * sizeof(double));
+    double S12[6 * 4];
 
     Get_Submatrix(S12, 6, 4, S, 10, 0, 6);
 
-    S12t = (double*) malloc(4 * 6 * sizeof(double));
+    double S12t[4 * 6];
 
     Get_Submatrix(S12t, 4, 6, S, 10, 6, 0);
 
-    S22 = (double*) malloc(4 * 4 * sizeof(double));
+    double S22[4 * 4];
 
     Get_Submatrix(S22, 4, 4, S, 10, 6, 6);
 
-    S22_1 = (double*) malloc(4 * 4 * sizeof(double));
+    double S22_1[4 * 4];
 
-    for (i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
 
         S22_1[i] = S22[i];
 
@@ -158,50 +151,50 @@ int main() {
 
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
-    S22a = (double*) malloc(4 * 6 * sizeof(double));
+    double S22a[4 * 6];
 
     Multiply_Matrices(S22a, S22_1, 4, 4, S12t, 6);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
-    S22b = (double*) malloc(6 * 6 * sizeof(double));
+    double S22b[6 * 6];
 
     Multiply_Matrices(S22b, S12, 6, 4, S22a, 6);
 
     // Calculate SS = S11 - S22b
 
-    SS = (double*) malloc(6 * 6 * sizeof(double));
+    double SS[6 * 6];
 
-    for (i = 0; i < 36; i++)
+    for (int i = 0; i < 36; i++)
 
         SS[i] = S11[i] - S22b[i];
 
-    E = (double*) malloc(6 * 6 * sizeof(double));
+    double E[6 * 6];
 
     Multiply_Matrices(E, C, 6, 6, SS, 6);
 
-    SSS = (double*) malloc(6 * 6 * sizeof(double));
+    double SSS[6 * 6];
 
     Hessenberg_Form_Elementary(E, SSS, 6);
 
-    eigen_real = (double*) malloc(6 * sizeof(double));
+    double eigen_real[6];
 
-    eigen_imag = (double*) malloc(6 * sizeof(double));
+    double eigen_imag[6];
 
     QR_Hessenberg_Matrix(E, SSS, eigen_real, eigen_imag, 6, 100);
 
-    index = 0;
+    int index = 0;
 
-    maxval = eigen_real[0];
+    double maxval = eigen_real[0];
 
-    for (i = 1; i < 6; i++) {
+    for (int i = 1; i < 6; i++) {
         if (eigen_real[i] > maxval) {
             maxval = eigen_real[i];
             index = i;
         }
     }
 
-    v1 = (double*) malloc(6 * sizeof(double));
+    double v1[6];
 
     v1[0] = SSS[index];
     v1[1] = SSS[index + 6];
@@ -211,7 +204,7 @@ int main() {
     v1[5] = SSS[index + 30];
 
     // normalize v1
-    norm = sqrt(v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] + v1[3] * v1[3] + v1[4] * v1[4] + v1[5] * v1[5]);
+    double norm = sqrt(v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] + v1[3] * v1[3] + v1[4] * v1[4] + v1[5] * v1[5]);
     v1[0] /= norm;
     v1[1] /= norm;
     v1[2] /= norm;
@@ -229,10 +222,10 @@ int main() {
     }
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
-    v2 = (double*) malloc(4 * sizeof(double));
+    double v2[4];
 
     Multiply_Matrices(v2, S22a, 4, 6, v1, 1);
-    v = (double*) malloc(10 * sizeof(double));
+    double v[10];
     v[0] = v1[0];
     v[1] = v1[1];
     v[2] = v1[2];
@@ -244,7 +237,7 @@ int main() {
     v[8] = -v2[2];
     v[9] = -v2[3];
 
-    Q = (double*) malloc(3 * 3 * sizeof(double));
+    double Q[3 * 3];
 
     Q[0] = v[0];
     Q[1] = v[5];
@@ -256,22 +249,22 @@ int main() {
     Q[7] = v[3];
     Q[8] = v[2];
 
-    U = (double*) malloc(3 * sizeof(double));
+    double U[3];
 
     U[0] = v[6];
     U[1] = v[7];
     U[2] = v[8];
 
-    Q_1 = (double*) malloc(3 * 3 * sizeof(double));
+    double Q_1[3 * 3];
 
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         Q_1[i] = Q[i];
 
     Choleski_LU_Decomposition(Q_1, 3);
     Choleski_LU_Inverse(Q_1, 3);
 
     // Calculate B = Q-1 * U   ( 3x1 = 3x3 * 3x1)
-    B = (double*) malloc(3 * sizeof(double));
+    double B[3];
 
     Multiply_Matrices(B, Q_1, 3, 3, U, 1);
 
@@ -279,115 +272,83 @@ int main() {
     B[1] = -B[1]; // y-axis combined bias
     B[2] = -B[2]; // z-axis combined bias
 
-    for (i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++)
         printf("%lf\r\n", B[i]);
 
     // First calculate QB = Q * B   ( 3x1 = 3x3 * 3x1)
 
-    QB = (double*) malloc(3 * sizeof(double));
+    double QB[3];
 
     Multiply_Matrices(QB, Q, 3, 3, B, 1);
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
+    double btqb;
     Multiply_Matrices( &btqb, B, 1, 3, QB, 1);
 
     // Calculate hmb = sqrt(btqb - J).
-    J = v[9];
+    double J = v[9];
 
-    hmb = sqrt(btqb - J);
+    double hmb = sqrt(btqb - J);
     // Calculate SQ, the square root of matrix Q
 
-    SSSS = (double*) malloc(3 * 3 * sizeof(double));
+    double SSSS[3 * 3];
 
     Hessenberg_Form_Elementary(Q, SSSS, 3);
 
-    eigen_real3 = (double*) malloc(3 * sizeof(double));
+    double eigen_real3[3];
 
-    eigen_imag3 = (double*) malloc(3 * sizeof(double));
+    double eigen_imag3[3];
 
     QR_Hessenberg_Matrix(Q, SSSS, eigen_real3, eigen_imag3, 3, 100);
 
     // normalize eigenvectors
 
-    norm1 = sqrt(SSSS[0] * SSSS[0] + SSSS[3] * SSSS[3] + SSSS[6] * SSSS[6]);
+    double norm1 = sqrt(SSSS[0] * SSSS[0] + SSSS[3] * SSSS[3] + SSSS[6] * SSSS[6]);
 
     SSSS[0] /= norm1;
     SSSS[3] /= norm1;
     SSSS[6] /= norm1;
 
-    norm2 = sqrt(SSSS[1] * SSSS[1] + SSSS[4] * SSSS[4] + SSSS[7] * SSSS[7]);
+    double norm2 = sqrt(SSSS[1] * SSSS[1] + SSSS[4] * SSSS[4] + SSSS[7] * SSSS[7]);
 
     SSSS[1] /= norm2;
     SSSS[4] /= norm2;
     SSSS[7] /= norm2;
 
-    norm3 = sqrt(SSSS[2] * SSSS[2] + SSSS[5] * SSSS[5] + SSSS[8] * SSSS[8]);
+    double norm3 = sqrt(SSSS[2] * SSSS[2] + SSSS[5] * SSSS[5] + SSSS[8] * SSSS[8]);
 
     SSSS[2] /= norm3;
     SSSS[5] /= norm3;
     SSSS[8] /= norm3;
 
-    Dz = (double*) malloc(3 * 3 * sizeof(double));
+    double Dz[3 * 3];
 
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         Dz[i] = 0.0;
 
     Dz[0] = sqrt(eigen_real3[0]);
     Dz[4] = sqrt(eigen_real3[1]);
     Dz[8] = sqrt(eigen_real3[2]);
-    vdz = (double*) malloc(3 * 3 * sizeof(double));
+    double vdz[3 * 3];
 
     Multiply_Matrices(vdz, SSSS, 3, 3, Dz, 3);
     Transpose_Square_Matrix(SSSS, 3);
 
-    SQ = (double*) malloc(3 * 3 * sizeof(double));
+    double SQ[3 * 3];
     Multiply_Matrices(SQ, vdz, 3, 3, SSSS, 3);
 
-    hm = 0.569;
+    double hm = 0.569;
 
-    A_1 = (double*) malloc(3 * 3 * sizeof(double));
+    double A_1[3 * 3];
 
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         A_1[i] = SQ[i] * hm / hmb;
 
-    for (i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++)
         printf("%lf %lf %lf\r\n", A_1[i * 3], A_1[i * 3 + 1], A_1[i * 3 + 2]);
 
-    free(D);
-    free(S);
-    free(C);
-    free(S11);
-    free(S12);
-    free(S12t);
-    free(S22);
-    free(S22_1);
-    free(S22a);
-    free(S22b);
-    free(SS);
-    free(E);
-    free(U);
-    free(SSS);
-    free(eigen_real);
-    free(eigen_imag);
-    free(v1);
-    free(v2);
-    free(v);
-    free(Q);
-    free(Q_1);
-    free(B);
-    free(QB);
-    free(SSSS);
-    free(eigen_real3);
-    free(eigen_imag3);
-    free(Dz);
-    free(vdz);
-    free(SQ);
-    free(A_1);
+
 
     return 0;
 
 }
-
-// Place here the source code of all the routines which have been forward-declared, available at
-
-// http://www.mymathlib.com/matrices/
