@@ -23,3 +23,6 @@ static void BackSubstitute_Complex_Vector(double*, double[], double[], int, doub
 static void Calculate_Eigenvectors(double*, double*, double[], double[], int);
 static void Complex_Division(double, double, double, double, double*, double*);
 void Transpose_Square_Matrix(double*, int);
+void Interchange_Columns(double *A, int col1, int col2, int nrows, int ncols);
+void Interchange_Rows(double *A, int row1, int row2, int ncols);
+int Lower_Triangular_Inverse(double *L, int n);
