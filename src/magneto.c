@@ -84,49 +84,14 @@ int main() {
 
     // Create pre-inverted constraint matrix C
 
-    double C[6 * 6];
-
-    C[0] = 0.0;
-    C[1] = 0.5;
-    C[2] = 0.5;
-    C[3] = 0.0;
-    C[4] = 0.0;
-    C[5] = 0.0;
-
-    C[6] = 0.5;
-    C[7] = 0.0;
-    C[8] = 0.5;
-    C[9] = 0.0;
-    C[10] = 0.0;
-    C[11] = 0.0;
-
-    C[12] = 0.5;
-    C[13] = 0.5;
-    C[14] = 0.0;
-    C[15] = 0.0;
-    C[16] = 0.0;
-    C[17] = 0.0;
-
-    C[18] = 0.0;
-    C[19] = 0.0;
-    C[20] = 0.0;
-    C[21] = -0.25;
-    C[22] = 0.0;
-    C[23] = 0.0;
-
-    C[24] = 0.0;
-    C[25] = 0.0;
-    C[26] = 0.0;
-    C[27] = 0.0;
-    C[28] = -0.25;
-    C[29] = 0.0;
-
-    C[30] = 0.0;
-    C[31] = 0.0;
-    C[32] = 0.0;
-    C[33] = 0.0;
-    C[34] = 0.0;
-    C[35] = -0.25;
+    double C[6 * 6] = {
+        0.0, 0.5, 0.5,   0.0,   0.0,   0.0,
+        0.5, 0.0, 0.5,   0.0,   0.0,   0.0,
+        0.5, 0.5, 0.0,   0.0,   0.0,   0.0,
+        0.0, 0.0, 0.0, -0.25,   0.0,   0.0,
+        0.0, 0.0, 0.0,   0.0, -0.25,   0.0,
+        0.0, 0.0, 0.0,   0.0,   0.0, -0.25,
+    };
 
     double S11[6 * 6];
 
@@ -198,17 +163,18 @@ int main() {
         }
     }
 
-    double v1[6];
+    double v1[6] = {
+        SSS[index],      SSS[index +  6], SSS[index + 12],
+        SSS[index + 18], SSS[index + 24], SSS[index + 30]
+    };
 
-    v1[0] = SSS[index];
-    v1[1] = SSS[index + 6];
-    v1[2] = SSS[index + 12];
-    v1[3] = SSS[index + 18];
-    v1[4] = SSS[index + 24];
-    v1[5] = SSS[index + 30];
 
     // normalize v1
-    double norm = sqrt(v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] + v1[3] * v1[3] + v1[4] * v1[4] + v1[5] * v1[5]);
+    double norm = sqrt(
+        v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] +
+        v1[3] * v1[3] + v1[4] * v1[4] + v1[5] * v1[5]
+    );
+
     v1[0] /= norm;
     v1[1] /= norm;
     v1[2] /= norm;
@@ -229,35 +195,20 @@ int main() {
     double v2[4];
 
     Multiply_Matrices(v2, S22a, 4, 6, v1, 1);
-    double v[10];
-    v[0] = v1[0];
-    v[1] = v1[1];
-    v[2] = v1[2];
-    v[3] = v1[3];
-    v[4] = v1[4];
-    v[5] = v1[5];
-    v[6] = -v2[0];
-    v[7] = -v2[1];
-    v[8] = -v2[2];
-    v[9] = -v2[3];
 
-    double Q[3 * 3];
+    double v[10] = {
+         v1[0],  v1[1],  v1[2],  v1[3],  v1[4],
+         v1[5], -v2[0], -v2[1], -v2[2], -v2[3]
+    };
 
-    Q[0] = v[0];
-    Q[1] = v[5];
-    Q[2] = v[4];
-    Q[3] = v[5];
-    Q[4] = v[1];
-    Q[5] = v[3];
-    Q[6] = v[4];
-    Q[7] = v[3];
-    Q[8] = v[2];
 
-    double U[3];
+    double Q[3 * 3] = {
+        v[0], v[5], v[4],
+        v[5], v[1], v[3],
+        v[4], v[3], v[2]
+    };
 
-    U[0] = v[6];
-    U[1] = v[7];
-    U[2] = v[8];
+    double U[3] = { v[6], v[7], v[8] };
 
     double Q_1[3 * 3];
 
@@ -287,7 +238,7 @@ int main() {
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
     double btqb;
-    Multiply_Matrices( &btqb, B, 1, 3, QB, 1);
+    Multiply_Matrices(&btqb, B, 1, 3, QB, 1);
 
     // Calculate hmb = sqrt(btqb - J).
     double J = v[9];
@@ -307,19 +258,31 @@ int main() {
 
     // normalize eigenvectors
 
-    double norm1 = sqrt(SSSS[0] * SSSS[0] + SSSS[3] * SSSS[3] + SSSS[6] * SSSS[6]);
+    double norm1 = sqrt(
+        SSSS[0] * SSSS[0] +
+        SSSS[3] * SSSS[3] +
+        SSSS[6] * SSSS[6]
+    );
 
     SSSS[0] /= norm1;
     SSSS[3] /= norm1;
     SSSS[6] /= norm1;
 
-    double norm2 = sqrt(SSSS[1] * SSSS[1] + SSSS[4] * SSSS[4] + SSSS[7] * SSSS[7]);
+    double norm2 = sqrt(
+        SSSS[1] * SSSS[1] +
+        SSSS[4] * SSSS[4] +
+        SSSS[7] * SSSS[7]
+    );
 
     SSSS[1] /= norm2;
     SSSS[4] /= norm2;
     SSSS[7] /= norm2;
 
-    double norm3 = sqrt(SSSS[2] * SSSS[2] + SSSS[5] * SSSS[5] + SSSS[8] * SSSS[8]);
+    double norm3 = sqrt(
+        SSSS[2] * SSSS[2] +
+        SSSS[5] * SSSS[5] +
+        SSSS[8] * SSSS[8]
+    );
 
     SSSS[2] /= norm3;
     SSSS[5] /= norm3;
