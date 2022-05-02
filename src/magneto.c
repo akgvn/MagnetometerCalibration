@@ -74,40 +74,22 @@ double* read_data_from_file(int* number_of_lines) {
 }
 
 int main() {
-    int nlines = 0;
-    double* D = read_data_from_file(&nlines);
+    int numberOfLines = 0;
+    double* D = read_data_from_file(&numberOfLines);
 
     double S[10 * 10];
-
-    Matrix_x_Its_Transpose(S, D, 10, nlines);
+    Matrix_x_Its_Transpose(S, D, 10, numberOfLines);
     free(D);
 
-    // Create pre-inverted constraint matrix C
-
-    double C[6 * 6] = {
-        0.0, 0.5, 0.5,   0.0,   0.0,   0.0,
-        0.5, 0.0, 0.5,   0.0,   0.0,   0.0,
-        0.5, 0.5, 0.0,   0.0,   0.0,   0.0,
-        0.0, 0.0, 0.0, -0.25,   0.0,   0.0,
-        0.0, 0.0, 0.0,   0.0, -0.25,   0.0,
-        0.0, 0.0, 0.0,   0.0,   0.0, -0.25,
-    };
-
     double S11[6 * 6];
-
-    Get_Submatrix(S11, 6, 6, S, 10, 0, 0);
-
     double S12[6 * 4];
-
-    Get_Submatrix(S12, 6, 4, S, 10, 0, 6);
-
     double S12t[4 * 6];
-
-    Get_Submatrix(S12t, 4, 6, S, 10, 6, 0);
-
     double S22[4 * 4];
 
-    Get_Submatrix(S22, 4, 4, S, 10, 6, 6);
+    Get_Submatrix(S11,  6, 6, S, 10, 0, 0);
+    Get_Submatrix(S12,  6, 4, S, 10, 0, 6);
+    Get_Submatrix(S12t, 4, 6, S, 10, 6, 0);
+    Get_Submatrix(S22,  4, 4, S, 10, 6, 6);
 
     double S22_1[4 * 4];
 
@@ -135,10 +117,19 @@ int main() {
     double SS[6 * 6];
 
     for (int i = 0; i < 36; i++)
-
         SS[i] = S11[i] - S22b[i];
 
     double E[6 * 6];
+
+    // Create pre-inverted constraint matrix C
+    double C[6 * 6] = {
+        0.0, 0.5, 0.5,   0.0,   0.0,   0.0,
+        0.5, 0.0, 0.5,   0.0,   0.0,   0.0,
+        0.5, 0.5, 0.0,   0.0,   0.0,   0.0,
+        0.0, 0.0, 0.0, -0.25,   0.0,   0.0,
+        0.0, 0.0, 0.0,   0.0, -0.25,   0.0,
+        0.0, 0.0, 0.0,   0.0,   0.0, -0.25,
+    };
 
     Multiply_Matrices(E, C, 6, 6, SS, 6);
 
@@ -147,7 +138,6 @@ int main() {
     Hessenberg_Form_Elementary(E, SSS, 6);
 
     double eigen_real[6];
-
     double eigen_imag[6];
 
     QR_Hessenberg_Matrix(E, SSS, eigen_real, eigen_imag, 6, 100);
@@ -168,27 +158,28 @@ int main() {
         SSS[index + 18], SSS[index + 24], SSS[index + 30]
     };
 
-
     // normalize v1
-    double norm = sqrt(
-        v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] +
-        v1[3] * v1[3] + v1[4] * v1[4] + v1[5] * v1[5]
-    );
+    {
+        double norm = sqrt(
+            v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] +
+            v1[3] * v1[3] + v1[4] * v1[4] + v1[5] * v1[5]
+        );
 
-    v1[0] /= norm;
-    v1[1] /= norm;
-    v1[2] /= norm;
-    v1[3] /= norm;
-    v1[4] /= norm;
-    v1[5] /= norm;
+        v1[0] /= norm;
+        v1[1] /= norm;
+        v1[2] /= norm;
+        v1[3] /= norm;
+        v1[4] /= norm;
+        v1[5] /= norm;
 
-    if (v1[0] < 0.0) {
-        v1[0] = -v1[0];
-        v1[1] = -v1[1];
-        v1[2] = -v1[2];
-        v1[3] = -v1[3];
-        v1[4] = -v1[4];
-        v1[5] = -v1[5];
+        if (v1[0] < 0.0) {
+            v1[0] = -v1[0];
+            v1[1] = -v1[1];
+            v1[2] = -v1[2];
+            v1[3] = -v1[3];
+            v1[4] = -v1[4];
+            v1[5] = -v1[5];
+        }
     }
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
@@ -251,42 +242,42 @@ int main() {
     Hessenberg_Form_Elementary(Q, SSSS, 3);
 
     double eigen_real3[3];
-
     double eigen_imag3[3];
 
     QR_Hessenberg_Matrix(Q, SSSS, eigen_real3, eigen_imag3, 3, 100);
 
     // normalize eigenvectors
+    {
+        double norm1 = sqrt(
+            SSSS[0] * SSSS[0] +
+            SSSS[3] * SSSS[3] +
+            SSSS[6] * SSSS[6]
+        );
 
-    double norm1 = sqrt(
-        SSSS[0] * SSSS[0] +
-        SSSS[3] * SSSS[3] +
-        SSSS[6] * SSSS[6]
-    );
+        SSSS[0] /= norm1;
+        SSSS[3] /= norm1;
+        SSSS[6] /= norm1;
 
-    SSSS[0] /= norm1;
-    SSSS[3] /= norm1;
-    SSSS[6] /= norm1;
+        double norm2 = sqrt(
+            SSSS[1] * SSSS[1] +
+            SSSS[4] * SSSS[4] +
+            SSSS[7] * SSSS[7]
+        );
 
-    double norm2 = sqrt(
-        SSSS[1] * SSSS[1] +
-        SSSS[4] * SSSS[4] +
-        SSSS[7] * SSSS[7]
-    );
+        SSSS[1] /= norm2;
+        SSSS[4] /= norm2;
+        SSSS[7] /= norm2;
 
-    SSSS[1] /= norm2;
-    SSSS[4] /= norm2;
-    SSSS[7] /= norm2;
+        double norm3 = sqrt(
+            SSSS[2] * SSSS[2] +
+            SSSS[5] * SSSS[5] +
+            SSSS[8] * SSSS[8]
+        );
 
-    double norm3 = sqrt(
-        SSSS[2] * SSSS[2] +
-        SSSS[5] * SSSS[5] +
-        SSSS[8] * SSSS[8]
-    );
-
-    SSSS[2] /= norm3;
-    SSSS[5] /= norm3;
-    SSSS[8] /= norm3;
+        SSSS[2] /= norm3;
+        SSSS[5] /= norm3;
+        SSSS[8] /= norm3;
+    }
 
     double Dz[3 * 3];
 
@@ -304,7 +295,7 @@ int main() {
     double SQ[3 * 3];
     Multiply_Matrices(SQ, vdz, 3, 3, SSSS, 3);
 
-    double hm = 0.569;
+    const double hm = 0.569;
 
     double A_1[3 * 3];
 
