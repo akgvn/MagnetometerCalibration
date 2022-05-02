@@ -29,6 +29,7 @@ import core.stdc.math;
 import core.stdc.stdlib;
 import core.stdc.string;
 
+
 import math_functions;
 
 double* read_data_from_file(int* number_of_lines) {
@@ -66,7 +67,12 @@ double* read_data_from_file(int* number_of_lines) {
     return D;
 }
 
-int main() {
+struct Result {
+    double[3] combined_bias;
+    double[3 * 3] correction;
+}
+
+Result calculate_the_thing() {
     int numberOfLines = 0;
     double* D = read_data_from_file(&numberOfLines);
 
@@ -210,6 +216,9 @@ int main() {
     B[1] = -B[1]; // y-axis combined bias
     B[2] = -B[2]; // z-axis combined bias
 
+    Result result;
+    result.combined_bias = [ B[0], B[1], B[2] ];
+
     for (int i = 0; i < 3; i++)
         printf("%lf\r\n", B[i]);
 
@@ -297,5 +306,38 @@ int main() {
     for (int i = 0; i < 3; i++)
         printf("%lf %lf %lf\r\n", A_1[i * 3], A_1[i * 3 + 1], A_1[i * 3 + 2]);
 
-    return 0;
+    result.correction = [
+        A_1[0 * 3], A_1[0 * 3 + 1], A_1[0 * 3 + 2],
+        A_1[1 * 3], A_1[1 * 3 + 1], A_1[1 * 3 + 2],
+        A_1[2 * 3], A_1[2 * 3 + 1], A_1[2 * 3 + 2]
+    ];
+
+    return result;
+}
+
+void main()
+{
+    calculate_the_thing();
+}
+
+unittest
+{
+    import std.stdio: writeln;
+    import std.math.operations: isClose;
+
+    Result expected;
+    expected.combined_bias = [-0.021659, 0.013250, -0.026167];
+    expected.correction = [0.956973, -0.017809, 0.006564, -0.017809, 0.964533, 0.003304, 0.006564, 0.003304, 1.036145];
+
+
+    auto calc = calculate_the_thing();
+
+    writeln("calc", calc);
+    writeln("expected", expected);
+
+    for (auto i = 0; i < expected.combined_bias.length; i++)
+        assert(isClose(calc.combined_bias[i], expected.combined_bias[i], 0.0001));
+
+    for (auto i = 0; i < expected.correction.length; i++)
+        assert(isClose(calc.correction[i], expected.correction[i], 0.0001));
 }
