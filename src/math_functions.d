@@ -2,6 +2,12 @@ import core.stdc.math;
 import core.stdc.stdlib;
 import core.stdc.float_;
 
+struct Matrix {
+    double[] m;
+
+    this(int row, int col) { m = new double[row * col]; }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // File: matrix_x_its_transpose.c                                             //
 // Routine(s):                                                                //
