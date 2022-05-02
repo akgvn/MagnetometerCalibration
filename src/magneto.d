@@ -24,23 +24,16 @@
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include <stdio.h>
-#include <math.h>
-#include <malloc.h>
-#include <string.h>
-#include <float.h>
+import core.stdc.stdio;
+import core.stdc.math;
+import core.stdc.stdlib;
+import core.stdc.string;
 
-#include "math_functions.h"
-
-
-// "It has been tested as a console application, and reproduces exactly
-// the results given by the FORTRAN implementation of Magneto 1.2, using
-// the test file mag.txt with a user norm of 0.569."
-
+import math_functions;
 
 double* read_data_from_file(int* number_of_lines) {
     int nlines = 0;
-    char buf[120];
+    char[120] buf;
 
     FILE* fp = fopen("mag.txt", "r");
     while (fgets(buf, 100, fp) != NULL)
@@ -48,7 +41,7 @@ double* read_data_from_file(int* number_of_lines) {
 
     rewind(fp);
 
-    double* D = (double*) malloc(10 * nlines * sizeof(double));
+    double* D = malloc(10 * nlines * double.sizeof);
 
     for (int i = 0; i < nlines; i++) {
         fgets(buf, 100, fp);
@@ -77,21 +70,21 @@ int main() {
     int numberOfLines = 0;
     double* D = read_data_from_file(&numberOfLines);
 
-    double S[10 * 10];
+    double[10 * 10] S;
     Matrix_x_Its_Transpose(S, D, 10, numberOfLines);
     free(D);
 
-    double S11[6 * 6];
-    double S12[6 * 4];
-    double S12t[4 * 6];
-    double S22[4 * 4];
+    double[6 * 6] S11;
+    double[6 * 4] S12;
+    double[4 * 6] S12t;
+    double[4 * 4] S22;
 
     Get_Submatrix(S11,  6, 6, S, 10, 0, 0);
     Get_Submatrix(S12,  6, 4, S, 10, 0, 6);
     Get_Submatrix(S12t, 4, 6, S, 10, 6, 0);
     Get_Submatrix(S22,  4, 4, S, 10, 6, 6);
 
-    double S22_1[4 * 4];
+    double[4 * 4] S22_1;
 
     for (int i = 0; i < 16; i++)
         S22_1[i] = S22[i];
@@ -102,27 +95,27 @@ int main() {
 
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
-    double S22a[4 * 6];
+    double[4 * 6] S22a;
 
     Multiply_Matrices(S22a, S22_1, 4, 4, S12t, 6);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
-    double S22b[6 * 6];
+    double[6 * 6] S22b;
 
     Multiply_Matrices(S22b, S12, 6, 4, S22a, 6);
 
     // Calculate SS = S11 - S22b
 
-    double SS[6 * 6];
+    double[6 * 6] SS;
 
     for (int i = 0; i < 36; i++)
         SS[i] = S11[i] - S22b[i];
 
-    double E[6 * 6];
+    double[6 * 6] E;
 
     // Create pre-inverted constraint matrix C
-    double C[6 * 6] = {
+    double[6 * 6] C = {
         0.0, 0.5, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.0, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.5, 0.0,   0.0,   0.0,   0.0,
@@ -133,12 +126,12 @@ int main() {
 
     Multiply_Matrices(E, C, 6, 6, SS, 6);
 
-    double SSS[6 * 6];
+    double[6 * 6] SSS;
 
     Hessenberg_Form_Elementary(E, SSS, 6);
 
-    double eigen_real[6];
-    double eigen_imag[6];
+    double[6] eigen_real;
+    double[6] eigen_imag;
 
     QR_Hessenberg_Matrix(E, SSS, eigen_real, eigen_imag, 6, 100);
 
@@ -153,7 +146,7 @@ int main() {
         }
     }
 
-    double v1[6] = {
+    double[6] v1 = {
         SSS[index],      SSS[index +  6], SSS[index + 12],
         SSS[index + 18], SSS[index + 24], SSS[index + 30]
     };
@@ -183,25 +176,25 @@ int main() {
     }
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
-    double v2[4];
+    double[4] v2;
 
     Multiply_Matrices(v2, S22a, 4, 6, v1, 1);
 
-    double v[10] = {
+    double[10] v = {
          v1[0],  v1[1],  v1[2],  v1[3],  v1[4],
          v1[5], -v2[0], -v2[1], -v2[2], -v2[3]
     };
 
 
-    double Q[3 * 3] = {
+    double[3 * 3] Q = {
         v[0], v[5], v[4],
         v[5], v[1], v[3],
         v[4], v[3], v[2]
     };
 
-    double U[3] = { v[6], v[7], v[8] };
+    double[3] U = { v[6], v[7], v[8] };
 
-    double Q_1[3 * 3];
+    double[3 * 3] Q_1;
 
     for (int i = 0; i < 9; i++)
         Q_1[i] = Q[i];
@@ -210,7 +203,7 @@ int main() {
     Choleski_LU_Inverse(Q_1, 3);
 
     // Calculate B = Q-1 * U   ( 3x1 = 3x3 * 3x1)
-    double B[3];
+    double[3] B;
 
     Multiply_Matrices(B, Q_1, 3, 3, U, 1);
 
@@ -223,7 +216,7 @@ int main() {
 
     // First calculate QB = Q * B   ( 3x1 = 3x3 * 3x1)
 
-    double QB[3];
+    double[3] QB;
 
     Multiply_Matrices(QB, Q, 3, 3, B, 1);
 
@@ -237,12 +230,12 @@ int main() {
     double hmb = sqrt(btqb - J);
     // Calculate SQ, the square root of matrix Q
 
-    double SSSS[3 * 3];
+    double[3 * 3] SSSS;
 
     Hessenberg_Form_Elementary(Q, SSSS, 3);
 
-    double eigen_real3[3];
-    double eigen_imag3[3];
+    double[3] eigen_real3;
+    double[3] eigen_imag3;
 
     QR_Hessenberg_Matrix(Q, SSSS, eigen_real3, eigen_imag3, 3, 100);
 
@@ -279,7 +272,7 @@ int main() {
         SSSS[8] /= norm3;
     }
 
-    double Dz[3 * 3];
+    double[3 * 3] Dz;
 
     for (int i = 0; i < 9; i++)
         Dz[i] = 0.0;
@@ -287,17 +280,17 @@ int main() {
     Dz[0] = sqrt(eigen_real3[0]);
     Dz[4] = sqrt(eigen_real3[1]);
     Dz[8] = sqrt(eigen_real3[2]);
-    double vdz[3 * 3];
+    double[3 * 3] vdz;
 
     Multiply_Matrices(vdz, SSSS, 3, 3, Dz, 3);
     Transpose_Square_Matrix(SSSS, 3);
 
-    double SQ[3 * 3];
+    double[3 * 3] SQ;
     Multiply_Matrices(SQ, vdz, 3, 3, SSSS, 3);
 
     const double hm = 0.569;
 
-    double A_1[3 * 3];
+    double[3 * 3] A_1;
 
     for (int i = 0; i < 9; i++)
         A_1[i] = SQ[i] * hm / hmb;
