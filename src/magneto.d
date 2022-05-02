@@ -32,11 +32,12 @@ import core.stdc.string;
 
 import math_functions;
 
-double* read_data_from_file(int* number_of_lines) {
+double* read_data_from_file(string filename, int* number_of_lines) {
     int nlines = 0;
     char[120] buf;
 
-    FILE* fp = fopen("mag.txt", "r");
+    import std.string: toStringz;
+    FILE* fp = fopen(filename.toStringz(), "r");
     while (fgets(buf.ptr, 100, fp) != null)
         nlines++;
 
@@ -72,9 +73,9 @@ struct Result {
     double[3 * 3] correction;
 }
 
-Result calculate_the_thing() {
+Result calculate_the_thing(string filename, double user_norm) {
     int numberOfLines = 0;
-    double* D = read_data_from_file(&numberOfLines);
+    double* D = read_data_from_file(filename, &numberOfLines);
 
     double[10 * 10] S;
     Matrix_x_Its_Transpose(S.ptr, D, 10, numberOfLines);
@@ -293,7 +294,7 @@ Result calculate_the_thing() {
     double[3 * 3] SQ;
     Multiply_Matrices(SQ.ptr, vdz.ptr, 3, 3, SSSS.ptr, 3);
 
-    const double hm = 0.569;
+    const double hm = user_norm;
 
     double[3 * 3] A_1;
 
@@ -311,8 +312,10 @@ Result calculate_the_thing() {
 
 void main()
 {
-    import std.stdio: writeln;
-    writeln(calculate_the_thing());
+    // import std.stdio: writeln;
+    // writeln(calculate_the_thing("mag.txt", 0.569));
+
+    return;
 }
 
 unittest
@@ -325,7 +328,7 @@ unittest
     expected.correction = [0.956973, -0.017809, 0.006564, -0.017809, 0.964533, 0.003304, 0.006564, 0.003304, 1.036145];
 
 
-    auto calc = calculate_the_thing();
+    auto calc = calculate_the_thing("mag.txt", 0.569);
 
     writeln("calc", calc);
     writeln("expected", expected);
