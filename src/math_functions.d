@@ -1268,7 +1268,7 @@ static void Double_QR_Step(double* H, int min_row, int max_row, int min_col,
          pS[k+1] -= a * b;
          pS[k] -= a;
       }
-   };
+   }
 }
 
 

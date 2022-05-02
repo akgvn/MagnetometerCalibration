@@ -36,18 +36,18 @@ double* read_data_from_file(int* number_of_lines) {
     char[120] buf;
 
     FILE* fp = fopen("mag.txt", "r");
-    while (fgets(buf, 100, fp) != NULL)
+    while (fgets(buf.ptr, 100, fp) != null)
         nlines++;
 
     rewind(fp);
 
-    double* D = malloc(10 * nlines * double.sizeof);
+    double* D = cast(double*) malloc(10 * nlines * double.sizeof);
 
     for (int i = 0; i < nlines; i++) {
-        fgets(buf, 100, fp);
+        fgets(buf.ptr, 100, fp);
 
         double x, y, z;
-        sscanf(buf, "%lf\t%lf\t%lf", &x, &y, &z);
+        sscanf(buf.ptr, "%lf\t%lf\t%lf", &x, &y, &z);
 
         D[i] = x * x;
         D[nlines + i] = y * y;
@@ -180,19 +180,19 @@ int main() {
 
     Multiply_Matrices(v2, S22a, 4, 6, v1, 1);
 
-    double[10] v = {
+    double[10] v = [
          v1[0],  v1[1],  v1[2],  v1[3],  v1[4],
          v1[5], -v2[0], -v2[1], -v2[2], -v2[3]
-    };
+    ];
 
 
-    double[3 * 3] Q = {
+    double[3 * 3] Q = [
         v[0], v[5], v[4],
         v[5], v[1], v[3],
         v[4], v[3], v[2]
-    };
+    ];
 
-    double[3] U = { v[6], v[7], v[8] };
+    double[3] U = [ v[6], v[7], v[8] ];
 
     double[3 * 3] Q_1;
 
