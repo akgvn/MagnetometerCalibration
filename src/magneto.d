@@ -219,9 +219,6 @@ Result calculate_the_thing() {
     Result result;
     result.combined_bias = [ B[0], B[1], B[2] ];
 
-    for (int i = 0; i < 3; i++)
-        printf("%lf\r\n", B[i]);
-
     // First calculate QB = Q * B   ( 3x1 = 3x3 * 3x1)
 
     double[3] QB;
@@ -303,9 +300,6 @@ Result calculate_the_thing() {
     for (int i = 0; i < 9; i++)
         A_1[i] = SQ[i] * hm / hmb;
 
-    for (int i = 0; i < 3; i++)
-        printf("%lf %lf %lf\r\n", A_1[i * 3], A_1[i * 3 + 1], A_1[i * 3 + 2]);
-
     result.correction = [
         A_1[0 * 3], A_1[0 * 3 + 1], A_1[0 * 3 + 2],
         A_1[1 * 3], A_1[1 * 3 + 1], A_1[1 * 3 + 2],
@@ -317,7 +311,8 @@ Result calculate_the_thing() {
 
 void main()
 {
-    calculate_the_thing();
+    import std.stdio: writeln;
+    writeln(calculate_the_thing());
 }
 
 unittest
