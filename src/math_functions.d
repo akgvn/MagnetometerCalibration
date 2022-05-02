@@ -1,6 +1,6 @@
 import core.stdc.math;
 import core.stdc.stdlib;
-
+import core.stdc.float_;
 
 ////////////////////////////////////////////////////////////////////////////////
 // File: matrix_x_its_transpose.c                                             //
@@ -108,7 +108,7 @@ import core.stdc.string;
 void Get_Submatrix(double* S, int mrows, int mcols,
                                         double* A, int ncols, int row, int col)
 {
-   int number_of_bytes = double.sizeof * mcols;
+   auto number_of_bytes = double.sizeof * mcols;
 
    for (A += row * ncols + col; mrows > 0; A += ncols, S+= mcols, mrows--)
       memcpy(S, A, number_of_bytes);
@@ -489,8 +489,8 @@ int Hessenberg_Form_Elementary(double* A, double* S, int n)
 
                        // Allocate working memory
 
-   perm = malloc(n * int.sizeof);
-   if (perm == NULL) return -1;             // not enough memory
+   perm = cast(int*) malloc(n * int.sizeof);
+   if (perm == null) return -1;             // not enough memory
 
            // For each column use Elementary transformations
            //   to zero the entries below the subdiagonal.
@@ -532,7 +532,7 @@ int Hessenberg_Form_Elementary(double* A, double* S, int n)
    pS = S + n + n;
    for (i = 2; i < n; pA += n, pS += n, i++) Copy_Vector(pA, pS, i - 1);
 
-   Hessenberg_Elementary_Transform(A, S, perm, n);
+   Hessenberg_Elementary_Transform(A, S, perm[0..n], n);
 
    free(perm);
    return 0;
@@ -761,7 +761,7 @@ int QR_Hessenberg_Matrix( double* H, double* S, double[] eigen_real,
 
          switch(row - i) {
             case 0: // One real eigenvalue
-               One_Real_Eigenvalue(pH, eigen_real, eigen_imag, i, shift);
+               One_Real_Eigenvalue(pH[0..n], eigen_real, eigen_imag, i, shift);
                found_eigenvalue = 1;
                break;
             case 1: // Either two real eigenvalues or a complex pair

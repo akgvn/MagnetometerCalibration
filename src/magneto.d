@@ -71,7 +71,7 @@ int main() {
     double* D = read_data_from_file(&numberOfLines);
 
     double[10 * 10] S;
-    Matrix_x_Its_Transpose(S, D, 10, numberOfLines);
+    Matrix_x_Its_Transpose(S.ptr, D, 10, numberOfLines);
     free(D);
 
     double[6 * 6] S11;
@@ -79,31 +79,30 @@ int main() {
     double[4 * 6] S12t;
     double[4 * 4] S22;
 
-    Get_Submatrix(S11,  6, 6, S, 10, 0, 0);
-    Get_Submatrix(S12,  6, 4, S, 10, 0, 6);
-    Get_Submatrix(S12t, 4, 6, S, 10, 6, 0);
-    Get_Submatrix(S22,  4, 4, S, 10, 6, 6);
+    Get_Submatrix(S11.ptr,  6, 6, S.ptr, 10, 0, 0);
+    Get_Submatrix(S12.ptr,  6, 4, S.ptr, 10, 0, 6);
+    Get_Submatrix(S12t.ptr, 4, 6, S.ptr, 10, 6, 0);
+    Get_Submatrix(S22.ptr,  4, 4, S.ptr, 10, 6, 6);
 
     double[4 * 4] S22_1;
 
     for (int i = 0; i < 16; i++)
         S22_1[i] = S22[i];
 
-    Choleski_LU_Decomposition(S22_1, 4);
-
-    Choleski_LU_Inverse(S22_1, 4);
+    Choleski_LU_Decomposition(S22_1.ptr, 4);
+    Choleski_LU_Inverse(S22_1.ptr, 4);
 
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
     double[4 * 6] S22a;
 
-    Multiply_Matrices(S22a, S22_1, 4, 4, S12t, 6);
+    Multiply_Matrices(S22a.ptr, S22_1.ptr, 4, 4, S12t.ptr, 6);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
     double[6 * 6] S22b;
 
-    Multiply_Matrices(S22b, S12, 6, 4, S22a, 6);
+    Multiply_Matrices(S22b.ptr, S12.ptr, 6, 4, S22a.ptr, 6);
 
     // Calculate SS = S11 - S22b
 
@@ -115,25 +114,25 @@ int main() {
     double[6 * 6] E;
 
     // Create pre-inverted constraint matrix C
-    double[6 * 6] C = {
+    double[6 * 6] C = [
         0.0, 0.5, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.0, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.5, 0.0,   0.0,   0.0,   0.0,
         0.0, 0.0, 0.0, -0.25,   0.0,   0.0,
         0.0, 0.0, 0.0,   0.0, -0.25,   0.0,
         0.0, 0.0, 0.0,   0.0,   0.0, -0.25,
-    };
+    ];
 
-    Multiply_Matrices(E, C, 6, 6, SS, 6);
+    Multiply_Matrices(E.ptr, C.ptr, 6, 6, SS.ptr, 6);
 
     double[6 * 6] SSS;
 
-    Hessenberg_Form_Elementary(E, SSS, 6);
+    Hessenberg_Form_Elementary(E.ptr, SSS.ptr, 6);
 
     double[6] eigen_real;
     double[6] eigen_imag;
 
-    QR_Hessenberg_Matrix(E, SSS, eigen_real, eigen_imag, 6, 100);
+    QR_Hessenberg_Matrix(E.ptr, SSS.ptr, eigen_real, eigen_imag, 6, 100);
 
     int index = 0;
 
@@ -146,10 +145,10 @@ int main() {
         }
     }
 
-    double[6] v1 = {
+    double[6] v1 = [
         SSS[index],      SSS[index +  6], SSS[index + 12],
         SSS[index + 18], SSS[index + 24], SSS[index + 30]
-    };
+    ];
 
     // normalize v1
     {
@@ -178,7 +177,7 @@ int main() {
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
     double[4] v2;
 
-    Multiply_Matrices(v2, S22a, 4, 6, v1, 1);
+    Multiply_Matrices(v2.ptr, S22a.ptr, 4, 6, v1.ptr, 1);
 
     double[10] v = [
          v1[0],  v1[1],  v1[2],  v1[3],  v1[4],
@@ -199,13 +198,13 @@ int main() {
     for (int i = 0; i < 9; i++)
         Q_1[i] = Q[i];
 
-    Choleski_LU_Decomposition(Q_1, 3);
-    Choleski_LU_Inverse(Q_1, 3);
+    Choleski_LU_Decomposition(Q_1.ptr, 3);
+    Choleski_LU_Inverse(Q_1.ptr, 3);
 
     // Calculate B = Q-1 * U   ( 3x1 = 3x3 * 3x1)
     double[3] B;
 
-    Multiply_Matrices(B, Q_1, 3, 3, U, 1);
+    Multiply_Matrices(B.ptr, Q_1.ptr, 3, 3, U.ptr, 1);
 
     B[0] = -B[0]; // x-axis combined bias
     B[1] = -B[1]; // y-axis combined bias
@@ -218,11 +217,11 @@ int main() {
 
     double[3] QB;
 
-    Multiply_Matrices(QB, Q, 3, 3, B, 1);
+    Multiply_Matrices(QB.ptr, Q.ptr, 3, 3, B.ptr, 1);
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
     double btqb;
-    Multiply_Matrices(&btqb, B, 1, 3, QB, 1);
+    Multiply_Matrices(&btqb, B.ptr, 1, 3, QB.ptr, 1);
 
     // Calculate hmb = sqrt(btqb - J).
     double J = v[9];
@@ -232,12 +231,12 @@ int main() {
 
     double[3 * 3] SSSS;
 
-    Hessenberg_Form_Elementary(Q, SSSS, 3);
+    Hessenberg_Form_Elementary(Q.ptr, SSSS.ptr, 3);
 
     double[3] eigen_real3;
     double[3] eigen_imag3;
 
-    QR_Hessenberg_Matrix(Q, SSSS, eigen_real3, eigen_imag3, 3, 100);
+    QR_Hessenberg_Matrix(Q.ptr, SSSS.ptr, eigen_real3, eigen_imag3, 3, 100);
 
     // normalize eigenvectors
     {
@@ -282,11 +281,11 @@ int main() {
     Dz[8] = sqrt(eigen_real3[2]);
     double[3 * 3] vdz;
 
-    Multiply_Matrices(vdz, SSSS, 3, 3, Dz, 3);
-    Transpose_Square_Matrix(SSSS, 3);
+    Multiply_Matrices(vdz.ptr, SSSS.ptr, 3, 3, Dz.ptr, 3);
+    Transpose_Square_Matrix(SSSS.ptr, 3);
 
     double[3 * 3] SQ;
-    Multiply_Matrices(SQ, vdz, 3, 3, SSSS, 3);
+    Multiply_Matrices(SQ.ptr, vdz.ptr, 3, 3, SSSS.ptr, 3);
 
     const double hm = 0.569;
 
