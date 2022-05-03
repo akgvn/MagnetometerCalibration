@@ -74,11 +74,10 @@ struct Result {
 
 Result calculate_the_thing(string filename, double user_norm) {
     const D = read_data_matrix_from_file(filename);
-    int numberOfLines = D.cols;
-
     const S = (D * D.transpose());
 
     const S11  = S.submatrix(6, 6, 0, 0);
+
     const S12  = S.submatrix(6, 4, 0, 6);
     const S12t = S.submatrix(4, 6, 6, 0);
     const S22  = S.submatrix(4, 4, 6, 6);
@@ -252,8 +251,8 @@ Result calculate_the_thing(string filename, double user_norm) {
 
 void main()
 {
-    // import std.stdio: writeln;
-    // writeln(calculate_the_thing("mag.txt", 0.569));
+    import std.stdio: writeln;
+    writeln(calculate_the_thing("mag.txt", 0.569));
 
     return;
 }
