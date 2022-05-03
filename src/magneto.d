@@ -73,25 +73,20 @@ struct Result {
 }
 
 Result calculate_the_thing(string filename, double user_norm) {
-    auto D = read_data_matrix_from_file(filename);
+    const D = read_data_matrix_from_file(filename);
     int numberOfLines = D.cols;
 
-    auto S = Matrix_x_Its_Transpose(D);
+    const S = Matrix_x_Its_Transpose(D);
 
-    // double[6 * 6] S11; // auto S11  = Matrix(6, 6);
-    double[6 * 4] S12;  // auto S12  = Matrix(6, 4);
-    double[4 * 6] S12t; // auto S12t = Matrix(4, 6);
-    double[4 * 4] S22;  // auto S22  = Matrix(4, 4);
-
-    auto S11 = Get_Submatrix(6, 6, S.m.ptr, 10, 0, 0); // Get_Submatrix(S11.ptr,  6, 6, S.ptr, 10, 0, 0);
-    Get_Submatrix(S12.ptr,  6, 4, S.m.ptr, 10, 0, 6);
-    Get_Submatrix(S12t.ptr, 4, 6, S.m.ptr, 10, 6, 0);
-    Get_Submatrix(S22.ptr,  4, 4, S.m.ptr, 10, 6, 6);
+    const S11  = Get_Submatrix(S, 6, 6, 0, 0);
+    auto S12   = Get_Submatrix(S, 6, 4, 0, 6);
+    auto S12t  = Get_Submatrix(S, 4, 6, 6, 0);
+    const S22  = Get_Submatrix(S, 4, 4, 6, 6);
 
     double[4 * 4] S22_1;
 
     for (int i = 0; i < 16; i++)
-        S22_1[i] = S22[i];
+        S22_1[i] = S22.get(i);
 
     Choleski_LU_Decomposition(S22_1.ptr, 4);
     Choleski_LU_Inverse(S22_1.ptr, 4);
@@ -99,14 +94,14 @@ Result calculate_the_thing(string filename, double user_norm) {
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
     double[4 * 6] S22a;
-    Multiply_Matrices(S22a.ptr, S22_1.ptr, 4, 4, S12t.ptr, 6);
+    Multiply_Matrices(S22a.ptr, S22_1.ptr, 4, 4, S12t.m.ptr, 6);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
     // double[6 * 6] S22b;
     // Multiply_Matrices(S22b.ptr, S12.ptr, 6, 4, S22a.ptr, 6);
 
-    auto S22b = Multiply_Matrices(S12.ptr, 6, 4, S22a.ptr, 6);
+    auto S22b = Multiply_Matrices(S12.m.ptr, 6, 4, S22a.ptr, 6);
 
     // Calculate SS = S11 - S22b
 

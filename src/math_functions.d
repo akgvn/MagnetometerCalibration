@@ -158,27 +158,6 @@ Matrix Matrix_x_Its_Transpose(ref const Matrix A) {
 
 import core.stdc.string;
 
-void Get_Submatrix(double* S, int mrows, int mcols,
-                                                     double* A, int ncols, int row, int col)
-{
-    auto number_of_bytes = double.sizeof * mcols;
-
-    for (A += row * ncols + col; mrows > 0; A += ncols, S+= mcols, mrows--)
-        memcpy(S, A, number_of_bytes);
-}
-
-Matrix Get_Submatrix(int sRows, int sCols, double* A, int aCols, int row, int col) {
-    auto number_of_bytes = double.sizeof * sCols;
-
-    auto result = Matrix(sRows, sCols);
-
-    double* S = result.m.ptr;
-    for (A += row * aCols + col; sRows > 0; A += aCols, S+= sCols, sRows--)
-        memcpy(S, A, number_of_bytes);
-
-    return result;
-}
-
 Matrix Get_Submatrix(ref const Matrix aMatrix, int sRows, int sCols, int row, int col) {
     const number_of_bytes = double.sizeof * sCols;
 
@@ -452,8 +431,7 @@ int Lower_Triangular_Inverse(double* L, int n)
 //     Multiply_Matrices(&C[0][0], &A[0][0], M, N, &B[0][0], NB);             //
 //     printf("The matrix C is \n"); ...                                      //
 ////////////////////////////////////////////////////////////////////////////////
-void Multiply_Matrices(double* C, double* A, int nrows, int ncols,
-                                                                             double* B, int mcols)
+void Multiply_Matrices(double* C, double* A, int nrows, int ncols, double* B, int mcols)
 {
     double* pB;
     double* p_B;
