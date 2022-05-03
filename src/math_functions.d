@@ -12,16 +12,20 @@ struct Matrix {
         m = new double[rows * cols];
     }
 
-    this(double[] matrix, int row, int col) @nogc {
+    this(double[] matrix, int row, int col) {
         rows = row;
         cols = col;
-        m = matrix;
+        m = new double[rows * cols];
+
+        m[] = matrix;
     }
 
-    this(double* matrix, int row, int col) @nogc {
+    this(const(double)* matrix, int row, int col) {
         rows = row;
         cols = col;
-        m = matrix[0..(rows*cols)];
+        m = new double[rows * cols];
+
+        m[] = matrix[0..(rows*cols)];
     }
 
     ref double get(int row, int col) @nogc inout {
@@ -156,9 +160,9 @@ Matrix Matrix_x_Its_Transpose(ref const Matrix A) {
 //     printf("The submatrix B is \n"); ... }                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
-import core.stdc.string;
-
 Matrix Get_Submatrix(ref const Matrix aMatrix, int sRows, int sCols, int row, int col) {
+    import core.stdc.string: memcpy;
+
     const number_of_bytes = double.sizeof * sCols;
 
     auto result = Matrix(sRows, sCols);
@@ -431,10 +435,10 @@ int Lower_Triangular_Inverse(double* L, int n)
 //     Multiply_Matrices(&C[0][0], &A[0][0], M, N, &B[0][0], NB);             //
 //     printf("The matrix C is \n"); ...                                      //
 ////////////////////////////////////////////////////////////////////////////////
-void Multiply_Matrices(double* C, double* A, int nrows, int ncols, double* B, int mcols)
+void Multiply_Matrices(double* C, const(double)* A, int nrows, int ncols, const(double)* B, int mcols)
 {
-    double* pB;
-    double* p_B;
+    const(double)* pB;
+    const(double)* p_B;
     int i,j,k;
 
     for (i = 0; i < nrows; A += ncols, i++)
@@ -447,7 +451,7 @@ void Multiply_Matrices(double* C, double* A, int nrows, int ncols, double* B, in
 }
 
 
-Matrix Multiply_Matrices(double* A, int nrows, int ncols, double* B, int mcols) {
+Matrix Multiply_Matrices(const(double)* A, int nrows, int ncols, const(double)* B, int mcols) {
     const aMatrix = Matrix(A, nrows, ncols);
     const bMatrix = Matrix(B, ncols, mcols);
 

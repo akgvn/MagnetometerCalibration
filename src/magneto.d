@@ -79,8 +79,8 @@ Result calculate_the_thing(string filename, double user_norm) {
     const S = Matrix_x_Its_Transpose(D);
 
     const S11  = Get_Submatrix(S, 6, 6, 0, 0);
-    auto S12   = Get_Submatrix(S, 6, 4, 0, 6);
-    auto S12t  = Get_Submatrix(S, 4, 6, 6, 0);
+    const S12  = Get_Submatrix(S, 6, 4, 0, 6);
+    const S12t = Get_Submatrix(S, 4, 6, 6, 0);
     const S22  = Get_Submatrix(S, 4, 4, 6, 6);
 
     double[4 * 4] S22_1;
