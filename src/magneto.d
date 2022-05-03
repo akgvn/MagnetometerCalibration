@@ -122,82 +122,80 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     Hessenberg_Form_Elementary(E.m.ptr, SSS.m.ptr, 6);
 
-    double[6] eigen_real;
-    double[6] eigen_imag;
+    auto eigen_real = Matrix(6, 1);
+    auto eigen_imag = Matrix(6, 1);
 
-    QR_Hessenberg_Matrix(E.m.ptr, SSS.m.ptr, eigen_real, eigen_imag, 6, 100);
+    QR_Hessenberg_Matrix(E.m.ptr, SSS.m.ptr, eigen_real.m, eigen_imag.m, 6, 100);
 
     int index = 0;
-
-    double maxval = eigen_real[0];
-
-    for (int i = 1; i < 6; i++) {
-        if (eigen_real[i] > maxval) {
-            maxval = eigen_real[i];
+    double maxval = eigen_real.get(0);
+    foreach (i; 1..6) {
+        if (eigen_real.get(i) > maxval) {
+            maxval = eigen_real.get(i);
             index = i;
         }
     }
 
-    double[6] v1 = [
+    auto v1 = Matrix([
         SSS.get(index),      SSS.get(index +  6), SSS.get(index + 12),
         SSS.get(index + 18), SSS.get(index + 24), SSS.get(index + 30)
-    ];
+    ], 6, 1);
 
     // normalize v1
     {
         double norm = sqrt(
-            v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2] +
-            v1[3] * v1[3] + v1[4] * v1[4] + v1[5] * v1[5]
+            v1.get(0) * v1.get(0) + v1.get(1) * v1.get(1) + v1.get(2) * v1.get(2) +
+            v1.get(3) * v1.get(3) + v1.get(4) * v1.get(4) + v1.get(5) * v1.get(5)
         );
 
-        v1[0] /= norm;
-        v1[1] /= norm;
-        v1[2] /= norm;
-        v1[3] /= norm;
-        v1[4] /= norm;
-        v1[5] /= norm;
+        v1.get(0) /= norm;
+        v1.get(1) /= norm;
+        v1.get(2) /= norm;
+        v1.get(3) /= norm;
+        v1.get(4) /= norm;
+        v1.get(5) /= norm;
 
-        if (v1[0] < 0.0) {
-            v1[0] = -v1[0];
-            v1[1] = -v1[1];
-            v1[2] = -v1[2];
-            v1[3] = -v1[3];
-            v1[4] = -v1[4];
-            v1[5] = -v1[5];
+        if (v1.get(0) < 0.0) {
+            v1.get(0) = -v1.get(0);
+            v1.get(1) = -v1.get(1);
+            v1.get(2) = -v1.get(2);
+            v1.get(3) = -v1.get(3);
+            v1.get(4) = -v1.get(4);
+            v1.get(5) = -v1.get(5);
         }
     }
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
-    double[4] v2;
+    auto v2 = Matrix(4, 1);
 
-    Multiply_Matrices(v2.ptr, S22a.m.ptr, 4, 6, v1.ptr, 1);
+    Multiply_Matrices(v2.m.ptr, S22a.m.ptr, 4, 6, v1.m.ptr, 1);
 
-    double[10] v = [
-         v1[0],  v1[1],  v1[2],  v1[3],  v1[4],
-         v1[5], -v2[0], -v2[1], -v2[2], -v2[3]
-    ];
+    auto v = Matrix([
+         v1.get(0),  v1.get(1),  v1.get(2),  v1.get(3),  v1.get(4),
+         v1.get(5), -v2.get(0), -v2.get(1), -v2.get(2), -v2.get(3)
+    ], 10, 1);
 
 
-    double[3 * 3] Q = [
-        v[0], v[5], v[4],
-        v[5], v[1], v[3],
-        v[4], v[3], v[2]
-    ];
+    auto Q = Matrix([
+        v.get(0), v.get(5), v.get(4),
+        v.get(5), v.get(1), v.get(3),
+        v.get(4), v.get(3), v.get(2)
+    ], 3, 3);
 
-    double[3] U = [ v[6], v[7], v[8] ];
+    auto U = Matrix([ v.get(6), v.get(7), v.get(8) ], 3, 1);
 
-    double[3 * 3] Q_1;
+    auto Q_1 = Matrix(3, 3);
 
     for (int i = 0; i < 9; i++)
-        Q_1[i] = Q[i];
+        Q_1.get(i) = Q.get(i);
 
-    Choleski_LU_Decomposition(Q_1.ptr, 3);
-    Choleski_LU_Inverse(Q_1.ptr, 3);
+    Choleski_LU_Decomposition(Q_1.m.ptr, 3);
+    Choleski_LU_Inverse(Q_1.m.ptr, 3);
 
     // Calculate B = Q-1 * U   ( 3x1 = 3x3 * 3x1)
     double[3] B;
 
-    Multiply_Matrices(B.ptr, Q_1.ptr, 3, 3, U.ptr, 1);
+    Multiply_Matrices(B.ptr, Q_1.m.ptr, 3, 3, U.m.ptr, 1);
 
     Result result;
     result.combined_bias = [
@@ -210,7 +208,7 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     double[3] QB;
 
-    Multiply_Matrices(QB.ptr, Q.ptr, 3, 3, B.ptr, 1);
+    Multiply_Matrices(QB.ptr, Q.m.ptr, 3, 3, B.ptr, 1);
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
     double btqb;
@@ -218,16 +216,16 @@ Result calculate_the_thing(string filename, double user_norm) {
 
 
     // Calculate hmb = sqrt(btqb - J). (double J = v[9])
-    double hmb = sqrt(btqb - v[9]);
+    double hmb = sqrt(btqb - v.get(9));
 
     // Calculate SQ, the square root of matrix Q
     double[3 * 3] SSSS;
 
-    Hessenberg_Form_Elementary(Q.ptr, SSSS.ptr, 3);
+    Hessenberg_Form_Elementary(Q.m.ptr, SSSS.ptr, 3);
 
     double[3] eigen_real3, eigen_imag3;
 
-    QR_Hessenberg_Matrix(Q.ptr, SSSS.ptr, eigen_real3, eigen_imag3, 3, 100);
+    QR_Hessenberg_Matrix(Q.m.ptr, SSSS.ptr, eigen_real3, eigen_imag3, 3, 100);
 
     // normalize eigenvectors
     {
