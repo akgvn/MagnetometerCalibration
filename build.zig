@@ -13,7 +13,6 @@ pub fn build(b: *std.build.Builder) void {
 
     const mathLib = b.addStaticLibrarySource("math", null);
     mathLib.addCSourceFile("src/math_functions.c", &[_][]const u8 {});
-    // mathLib.addCSourceFile("buffer.c", &[_][]const u8 {});
     mathLib.linkLibC();
     mathLib.install();
 

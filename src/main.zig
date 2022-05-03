@@ -1,18 +1,22 @@
 const std = @import("std");
 const math = @import("math");
-const Matrix = @import("types.zig").Matrix;
-const Result = @import("types.zig").Result;
+const types = @import("types.zig");
 const mapi = @import("math_api.zig");
+const Allocator = std.mem.Allocator;
 
-fn calculate_the_thing() Result {
+const Matrix = types.Matrix;
+const CalibrationResult = types.CalibrationResult;
+const FileReadResult = types.FileReadResult;
+
+fn calculateTheThing() CalibrationResult {
     return .{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 }
 
-fn parse_line(line: []const u8) ![3]f64 {
+fn parseLine(line: []const u8) ![3]f64 {
     const parseFloat = std.fmt.parseFloat;
     const tokenize = std.mem.tokenize;
 
-    var line_iterator = tokenize(u8, line, "\t\n\x0D"); // \x0D is ASCII 13, carriage return. parseFloat fails when the slice includes that.
+    var line_iterator = tokenize(u8, line, "\t\n\r");
 
     const first = try parseFloat(f64, line_iterator.next().?);
     const second = try parseFloat(f64, line_iterator.next().?);
@@ -21,46 +25,54 @@ fn parse_line(line: []const u8) ![3]f64 {
     return [3]f64{ first, second, third };
 }
 
-fn read_file_data_to_matrix() !Matrix {
-    const cwd = std.fs.cwd();
-    var file = try cwd.openFile("mag.txt", .{});
+fn readFileData(allocator: Allocator) !FileReadResult {
+    var file = try std.fs.cwd().openFile("mag.txt", .{});
     defer file.close();
 
     const bufferedReader = std.io.bufferedReader;
     const reader = bufferedReader(file.reader()).reader();
 
-    // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    // defer arena.deinit();
-    // const ally = &arena.allocator;
+    var list = std.ArrayList(f64).init(allocator);
 
-    var buf: [4096]u8 = undefined;
+    var buf: [128]u8 = undefined;
+    var line_count: i32 = 0;
     while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        const line_data = try parse_line(line);
+        const line_data = try parseLine(line);
+        const x = line_data[0];
+        const y = line_data[1];
+        const z = line_data[2];
+
+        try list.append(x * x);
+        try list.append(y * y);
+        try list.append(z * z);
+        try list.append(2.0 * y * z);
+        try list.append(2.0 * x * z);
+        try list.append(2.0 * x * y);
+        try list.append(2.0 * x);
+        try list.append(2.0 * y);
+        try list.append(2.0 * z);
+        try list.append(1.0);
+
+        line_count += 1;
     }
 
-    return Matrix.init(&.{}, 1, 1);
+    return FileReadResult{ .list = list.toOwnedSlice(), .line_count = line_count };
 }
 
 pub fn main() anyerror!void {
-    _ = try read_file_data_to_matrix();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var fileData = try readFileData(arena.allocator());
 
-    var mat = [_]f64{
-        0.956973,  -0.017809, 0.006564,
-        -0.017809, 0.964533,  0.003304,
-        0.006564,  0.003304,  1.036145,
-    };
+    const S = mapi.multiplyMatrixWithTranspose(fileData.list, 10, fileData.line_count);
+    arena.deinit();
 
-    var res: [9]f64 = .{0} ** 9;
-
-    mapi.Matrix_x_Its_Transpose(&res, &mat, 3, 3);
-
-    std.log.info("All your codebase are belong to us. {any}", .{res});
+    std.log.info("In main, result of mapi.Matrix_x_Its_Transpose is {any}", .{S});
 }
 
-test "Mag.txt results test" {
-    const result = calculate_the_thing();
+test "Mag.txt test" {
+    const result = calculateTheThing();
 
-    const expected = Result{ .bias = [_]f64{ -0.021659, 0.013250, -0.026167 }, .corr = [_]f64{
+    const expected = CalibrationResult{ .bias = [_]f64{ -0.021659, 0.013250, -0.026167 }, .corr = [_]f64{
         0.956973,  -0.017809, 0.006564,
         -0.017809, 0.964533,  0.003304,
         0.006564,  0.003304,  1.036145,
