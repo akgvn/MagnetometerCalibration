@@ -32,7 +32,7 @@ import core.stdc.string;
 
 import math_functions;
 
-double* read_data_from_file(string filename, out int number_of_lines) {
+Matrix read_data_matrix_from_file(string filename) {
     int nlines = 0;
     char[120] buf;
 
@@ -43,29 +43,28 @@ double* read_data_from_file(string filename, out int number_of_lines) {
 
     rewind(fp);
 
-    double* D = cast(double*) malloc(10 * nlines * double.sizeof);
+    auto result = Matrix(10, nlines);
 
-    for (int i = 0; i < nlines; i++) {
+    foreach (col; 0..nlines) {
         fgets(buf.ptr, 100, fp);
 
         double x, y, z;
         sscanf(buf.ptr, "%lf\t%lf\t%lf", &x, &y, &z);
 
-        D[nlines * 0 + i] = x * x;
-        D[nlines * 1 + i] = y * y;
-        D[nlines * 2 + i] = z * z;
-        D[nlines * 3 + i] = 2.0 * y * z;
-        D[nlines * 4 + i] = 2.0 * x * z;
-        D[nlines * 5 + i] = 2.0 * x * y;
-        D[nlines * 6 + i] = 2.0 * x;
-        D[nlines * 7 + i] = 2.0 * y;
-        D[nlines * 8 + i] = 2.0 * z;
-        D[nlines * 9 + i] = 1.0;
+        result.get(0, col) = x * x;
+        result.get(1, col) = y * y;
+        result.get(2, col) = z * z;
+        result.get(3, col) = 2.0 * y * z;
+        result.get(4, col) = 2.0 * x * z;
+        result.get(5, col) = 2.0 * x * y;
+        result.get(6, col) = 2.0 * x;
+        result.get(7, col) = 2.0 * y;
+        result.get(8, col) = 2.0 * z;
+        result.get(9, col) = 1.0;
     }
     fclose(fp);
 
-    number_of_lines = nlines;
-    return D;
+    return result;
 }
 
 struct Result {
@@ -74,15 +73,10 @@ struct Result {
 }
 
 Result calculate_the_thing(string filename, double user_norm) {
-    int numberOfLines = 0;
-    double* D = read_data_from_file(filename, numberOfLines);
-    auto dMatrix = Matrix(D, 10, numberOfLines);
+    auto D = read_data_matrix_from_file(filename);
+    int numberOfLines = D.cols;
 
-    // double[10 * 10] S;
-    // Matrix_x_Its_Transpose(S.ptr, D, 10, numberOfLines);
-    auto S = Matrix_x_Its_Transpose(dMatrix);
-
-    free(D);
+    auto S = Matrix_x_Its_Transpose(D);
 
     // double[6 * 6] S11; // auto S11  = Matrix(6, 6);
     double[6 * 4] S12;  // auto S12  = Matrix(6, 4);
