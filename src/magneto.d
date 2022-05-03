@@ -93,36 +93,31 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
-    double[4 * 6] S22a;
-    Multiply_Matrices(S22a.ptr, S22_1.ptr, 4, 4, S12t.m.ptr, 6);
+    const S22a = Multiply_Matrices(S22_1.ptr, 4, 4, S12t.m.ptr, 6);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
-    // double[6 * 6] S22b;
-    // Multiply_Matrices(S22b.ptr, S12.ptr, 6, 4, S22a.ptr, 6);
-
-    auto S22b = Multiply_Matrices(S12.m.ptr, 6, 4, S22a.ptr, 6);
+    const S22b = Multiply_Matrices(S12.m.ptr, 6, 4, S22a.m.ptr, 6);
 
     // Calculate SS = S11 - S22b
 
-    double[6 * 6] SS;
+    auto SS = Matrix(6, 6);
 
     for (int i = 0; i < 36; i++)
-        SS[i] = S11.get(i) - S22b.get(i);
-
-    double[6 * 6] E;
+        SS.get(i) = S11.get(i) - S22b.get(i);
 
     // Create pre-inverted constraint matrix C
-    double[6 * 6] C = [
+    const C = Matrix([
         0.0, 0.5, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.0, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.5, 0.0,   0.0,   0.0,   0.0,
         0.0, 0.0, 0.0, -0.25,   0.0,   0.0,
         0.0, 0.0, 0.0,   0.0, -0.25,   0.0,
         0.0, 0.0, 0.0,   0.0,   0.0, -0.25,
-    ];
+    ], 6, 6);
 
-    Multiply_Matrices(E.ptr, C.ptr, 6, 6, SS.ptr, 6);
+    double[6 * 6] E;
+    Multiply_Matrices(E.ptr, C.m.ptr, 6, 6, SS.m.ptr, 6);
 
     double[6 * 6] SSS;
 
@@ -176,7 +171,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
     double[4] v2;
 
-    Multiply_Matrices(v2.ptr, S22a.ptr, 4, 6, v1.ptr, 1);
+    Multiply_Matrices(v2.ptr, S22a.m.ptr, 4, 6, v1.ptr, 1);
 
     double[10] v = [
          v1[0],  v1[1],  v1[2],  v1[3],  v1[4],
@@ -205,12 +200,12 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     Multiply_Matrices(B.ptr, Q_1.ptr, 3, 3, U.ptr, 1);
 
-    B[0] = -B[0]; // x-axis combined bias
-    B[1] = -B[1]; // y-axis combined bias
-    B[2] = -B[2]; // z-axis combined bias
-
     Result result;
-    result.combined_bias = [ B[0], B[1], B[2] ];
+    result.combined_bias = [
+        -B[0], // x-axis combined bias
+        -B[1], // y-axis combined bias
+        -B[2]  // z-axis combined bias
+    ];
 
     // First calculate QB = Q * B   ( 3x1 = 3x3 * 3x1)
 

@@ -17,7 +17,7 @@ struct Matrix {
         cols = col;
         m = new double[rows * cols];
 
-        m[] = matrix;
+        m[] = matrix[0..(rows*cols)];
     }
 
     this(const(double)* matrix, int row, int col) {
@@ -160,16 +160,16 @@ Matrix Matrix_x_Its_Transpose(ref const Matrix A) {
 //     printf("The submatrix B is \n"); ... }                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
-Matrix Get_Submatrix(ref const Matrix aMatrix, int sRows, int sCols, int row, int col) {
+Matrix Get_Submatrix(ref const Matrix aMatrix, int resultRows, int resultCols, int startRow, int startCol) {
     import core.stdc.string: memcpy;
 
-    const number_of_bytes = double.sizeof * sCols;
+    const number_of_bytes = double.sizeof * resultCols;
 
-    auto result = Matrix(sRows, sCols);
+    auto result = Matrix(resultRows, resultCols);
 
     double* S = result.m.ptr;
     const(double)* A = aMatrix.m.ptr;
-    for (A += row * aMatrix.cols + col; sRows > 0; A += aMatrix.cols, S += sCols, sRows--)
+    for (A += startRow * aMatrix.cols + startCol; resultRows > 0; A += aMatrix.cols, S += resultCols, resultRows--)
         memcpy(S, A, number_of_bytes);
 
     return result;
@@ -230,42 +230,42 @@ int Choleski_LU_Decomposition(double* A, int n)
     double reciprocal;
 
     for (k = 0, p_Lk0 = A; k < n; p_Lk0 += n, k++) {
-
-//            Update pointer to row k diagonal element.
+        // Update pointer to row k diagonal element.
 
         p_Lkk = p_Lk0 + k;
 
-//            Calculate the difference of the diagonal element in row k
-//            from the sum of squares of elements row k from column 0 to
-//            column k-1.
+        // Calculate the difference of the diagonal element in row k
+        // from the sum of squares of elements row k from column 0 to
+        // column k-1.
 
         for (p = 0, p_Lkp = p_Lk0; p < k; p_Lkp += 1,  p++)
-            *p_Lkk -= *p_Lkp * *p_Lkp;
+            *p_Lkk -= *p_Lkp * (*p_Lkp);
 
-//            If diagonal element is not positive, return the error code,
-//            the matrix is not positive definite symmetric.
+        // If diagonal element is not positive, return the error code,
+        // the matrix is not positive definite symmetric.
 
         if ( *p_Lkk <= 0.0 ) return -1;
 
-//            Otherwise take the square root of the diagonal element.
+        // Otherwise take the square root of the diagonal element.
 
         *p_Lkk = sqrt( *p_Lkk );
         reciprocal = 1.0 / *p_Lkk;
 
-//            For rows i = k+1 to n-1, column k, calculate the difference
-//            between the i,k th element and the inner product of the first
-//            k-1 columns of row i and row k, then divide the difference by
-//            the diagonal element in row k.
-//            Store the transposed element in the upper triangular matrix.
+        // For rows i = k+1 to n-1, column k, calculate the difference
+        // between the i,k th element and the inner product of the first
+        // k-1 columns of row i and row k, then divide the difference by
+        // the diagonal element in row k.
+        // Store the transposed element in the upper triangular matrix.
 
         p_Li0 = p_Lk0 + n;
         for (i = k + 1; i < n; p_Li0 += n, i++) {
             for (p = 0; p < k; p++)
-                *(p_Li0 + k) -= *(p_Li0 + p) * *(p_Lk0 + p);
+                *(p_Li0 + k) -= *(p_Li0 + p) * (*(p_Lk0 + p));
             *(p_Li0 + k) *= reciprocal;
             *(p_Lk0 + i) = *(p_Li0 + k);
         }
     }
+
     return 0;
 }
 
@@ -320,7 +320,7 @@ int Choleski_LU_Inverse(double* LU, int n)
         for (j = 0, p_j = LU; j <= i; j++, p_j += n) {
             sum = 0.0;
             for (k = i, p_k = p_i; k < n; k++, p_k += n)
-                sum += *(p_k + i) * *(p_k + j);
+                sum += *(p_k + i) * (*(p_k + j));
             *(p_i + j) = sum;
             *(p_j + i) = sum;
         }
@@ -374,14 +374,14 @@ int Lower_Triangular_Inverse(double* L, int n)
     double* p_i, p_j, p_k;
     double sum;
 
-//         Invert the diagonal elements of the lower triangular matrix L.
+    // Invert the diagonal elements of the lower triangular matrix L.
 
     for (k = 0, p_k = L; k < n; p_k += (n + 1), k++) {
         if (*p_k == 0.0) return -1;
         else *p_k = 1.0 / *p_k;
     }
 
-//         Invert the remaining lower triangular matrix L row by row.
+    // Invert the remaining lower triangular matrix L row by row.
 
     for (i = 1, p_i = L + n; i < n; i++, p_i += n) {
         for (j = 0, p_j = L; j < i; p_j += n, j++) {
