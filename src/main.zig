@@ -63,10 +63,15 @@ pub fn main() anyerror!void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     var fileData = try readFileData(arena.allocator());
 
-    const S = mapi.multiplyMatrixWithTranspose(fileData.list, 10, fileData.line_count);
+    var S = mapi.multiplyMatrixWithTranspose(fileData.list, 10, fileData.line_count);
     arena.deinit();
 
-    std.log.info("In main, result of mapi.Matrix_x_Its_Transpose is {any}", .{S});
+    const S11 = S.getSubmatrix(6, 6, 0, 0);
+    // const S12 = S.getSubmatrix(6, 4, 0, 6);
+    // const S12t = S.getSubmatrix(4, 6, 6, 0);
+    // const S22 = S.getSubmatrix(4, 4, 6, 6);
+
+    std.log.info("S11 is {any}", .{S11});
 }
 
 test "Mag.txt test" {
