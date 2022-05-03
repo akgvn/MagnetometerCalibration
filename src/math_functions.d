@@ -28,6 +28,14 @@ struct Matrix {
         m[] = matrix[0..(rows*cols)];
     }
 
+    this(ref const Matrix matrix) {
+        rows = matrix.rows;
+        cols = matrix.cols;
+        m = new double[rows * cols];
+
+        m[] = matrix.m[];
+    }
+
     ref double get(int row, int col) @nogc inout {
         assert(row < rows);
         assert(col < cols);
@@ -63,6 +71,32 @@ struct Matrix {
         const(double)* A = this.m.ptr;
         for (A += startRow * this.cols + startCol; resultRows > 0; A += this.cols, S += resultCols, resultRows--)
             memcpy(S, A, number_of_bytes);
+
+        return result;
+    }
+
+    double flattened_value() const {
+        if (rows == 1 && cols == 1) return get(0);
+        return double.nan;
+    }
+
+    Matrix normalized() const {
+        assert(rows == 1);
+
+        auto result = Matrix(this);
+
+        double norm = 0.0;
+        foreach(col; 0..cols) {
+            const val = get(0, col);
+            norm += val * val;
+        }
+        norm = sqrt(norm);
+
+        if (result.get(0, 0) / norm < 0.0) norm *= -1;
+
+        foreach(col; 0..cols) {
+            result.get(0, col) /= norm;
+        }
 
         return result;
     }

@@ -139,31 +139,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     auto v1 = Matrix([
         SSS.get(index),      SSS.get(index +  6), SSS.get(index + 12),
         SSS.get(index + 18), SSS.get(index + 24), SSS.get(index + 30)
-    ], 6, 1);
-
-    // normalize v1
-    {
-        double norm = sqrt(
-            v1.get(0) * v1.get(0) + v1.get(1) * v1.get(1) + v1.get(2) * v1.get(2) +
-            v1.get(3) * v1.get(3) + v1.get(4) * v1.get(4) + v1.get(5) * v1.get(5)
-        );
-
-        v1.get(0) /= norm;
-        v1.get(1) /= norm;
-        v1.get(2) /= norm;
-        v1.get(3) /= norm;
-        v1.get(4) /= norm;
-        v1.get(5) /= norm;
-
-        if (v1.get(0) < 0.0) {
-            v1.get(0) = -v1.get(0);
-            v1.get(1) = -v1.get(1);
-            v1.get(2) = -v1.get(2);
-            v1.get(3) = -v1.get(3);
-            v1.get(4) = -v1.get(4);
-            v1.get(5) = -v1.get(5);
-        }
-    }
+    ], 1, 6).normalized();
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
     auto v2 = Matrix(4, 1);
@@ -212,7 +188,7 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
     double btqb;
-    Multiply_Matrices(&btqb, B.ptr, 1, 3, QB.ptr, 1);
+    Multiply_Matrices(&btqb, B.ptr, 1, 3, QB.ptr, 1); // flattened_value
 
 
     // Calculate hmb = sqrt(btqb - J). (double J = v[9])
