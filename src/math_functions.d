@@ -24,16 +24,28 @@ struct Matrix {
         m = matrix[0..(rows*cols)];
     }
 
-    ref double get(int row, int col) @nogc {
+    ref double get(int row, int col) @nogc inout {
         assert(row < rows);
         assert(col < cols);
 
         return get(row * cols + col);
     }
 
-    ref double get(int pos) @nogc {
+    ref double get(int pos) @nogc inout {
         assert(pos < (rows * cols));
-        return m[pos];
+        return cast() m[pos];
+    }
+
+    Matrix transpose() const {
+        auto result = Matrix(cols, rows);
+
+        foreach(row; 0..rows) {
+            foreach(col; 0..cols) {
+                result.get(col, row) = get(row, col);
+            }
+        }
+
+        return result;
     }
 }
 
@@ -76,6 +88,7 @@ struct Matrix {
 //     printf("The matrix C = AA ' is \n"); ...                               //
 ////////////////////////////////////////////////////////////////////////////////
 
+// TODO Remove this
 void Matrix_x_Its_Transpose(double* C, double* A, int nrows, int ncols)
 {
     int i,j,k;
@@ -93,6 +106,11 @@ void Matrix_x_Its_Transpose(double* C, double* A, int nrows, int ncols)
             *pCji = *(pCi0 + j);
         }
     }
+}
+
+Matrix Matrix_x_Its_Transpose(ref const Matrix A) {
+    const T = A.transpose();
+    return Multiply_Matrices(A, T);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,6 +174,19 @@ Matrix Get_Submatrix(int sRows, int sCols, double* A, int aCols, int row, int co
 
     double* S = result.m.ptr;
     for (A += row * aCols + col; sRows > 0; A += aCols, S+= sCols, sRows--)
+        memcpy(S, A, number_of_bytes);
+
+    return result;
+}
+
+Matrix Get_Submatrix(ref const Matrix aMatrix, int sRows, int sCols, int row, int col) {
+    const number_of_bytes = double.sizeof * sCols;
+
+    auto result = Matrix(sRows, sCols);
+
+    double* S = result.m.ptr;
+    const(double)* A = aMatrix.m.ptr;
+    for (A += row * aMatrix.cols + col; sRows > 0; A += aMatrix.cols, S += sCols, sRows--)
         memcpy(S, A, number_of_bytes);
 
     return result;
@@ -439,31 +470,26 @@ void Multiply_Matrices(double* C, double* A, int nrows, int ncols,
 
 
 Matrix Multiply_Matrices(double* A, int nrows, int ncols, double* B, int mcols) {
-    auto m = Matrix(nrows, mcols);
+    const aMatrix = Matrix(A, nrows, ncols);
+    const bMatrix = Matrix(B, ncols, mcols);
 
-    for (auto row = 0; row < nrows; A += ncols, row++) {
-        for (auto p_B = B, col = 0; col < mcols; p_B++, col++) {
-            double* pB = p_B;
-            m.get(row, col) = 0.0;
-            for (auto k = 0; k < ncols; pB += mcols, k++)
-                m.get(row, col) += *(A+k) * *pB;
-        }
-    }
-
-    return m;
+    return Multiply_Matrices(aMatrix, bMatrix);
 }
 
-Matrix Multiply_Matrices(Matrix A, Matrix B) {
+Matrix Multiply_Matrices(ref const Matrix A, ref const Matrix B) {
+    assert(A.m[0] != double.init);
+    assert(B.m[0] != double.init);
     assert(A.cols == B.rows);
 
     auto m = Matrix(A.rows, B.cols);
 
-    for (auto row = 0; row < A.rows; row++) {
-        for (auto col = 0; col < B.cols; col++) {
+    foreach (row; 0..A.rows) {
+        foreach (col; 0..B.cols) {
             m.get(row, col) = 0.0;
 
-            for (auto k = 0; k < A.cols; k++)
+            foreach (k; 0..A.cols) {
                 m.get(row, col) += A.get(row, k) * B.get(k, col);
+            }
         }
     }
 

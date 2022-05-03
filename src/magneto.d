@@ -51,8 +51,8 @@ double* read_data_from_file(string filename, out int number_of_lines) {
         double x, y, z;
         sscanf(buf.ptr, "%lf\t%lf\t%lf", &x, &y, &z);
 
-        D[i] = x * x;
-        D[nlines + i] = y * y;
+        D[nlines * 0 + i] = x * x;
+        D[nlines * 1 + i] = y * y;
         D[nlines * 2 + i] = z * z;
         D[nlines * 3 + i] = 2.0 * y * z;
         D[nlines * 4 + i] = 2.0 * x * z;
@@ -76,9 +76,12 @@ struct Result {
 Result calculate_the_thing(string filename, double user_norm) {
     int numberOfLines = 0;
     double* D = read_data_from_file(filename, numberOfLines);
+    auto dMatrix = Matrix(D, 10, numberOfLines);
 
-    double[10 * 10] S;
-    Matrix_x_Its_Transpose(S.ptr, D, 10, numberOfLines);
+    // double[10 * 10] S;
+    // Matrix_x_Its_Transpose(S.ptr, D, 10, numberOfLines);
+    auto S = Matrix_x_Its_Transpose(dMatrix);
+
     free(D);
 
     // double[6 * 6] S11; // auto S11  = Matrix(6, 6);
@@ -86,10 +89,10 @@ Result calculate_the_thing(string filename, double user_norm) {
     double[4 * 6] S12t; // auto S12t = Matrix(4, 6);
     double[4 * 4] S22;  // auto S22  = Matrix(4, 4);
 
-    auto S11 = Get_Submatrix(6, 6, S.ptr, 10, 0, 0); // Get_Submatrix(S11.ptr,  6, 6, S.ptr, 10, 0, 0);
-    Get_Submatrix(S12.ptr,  6, 4, S.ptr, 10, 0, 6);
-    Get_Submatrix(S12t.ptr, 4, 6, S.ptr, 10, 6, 0);
-    Get_Submatrix(S22.ptr,  4, 4, S.ptr, 10, 6, 6);
+    auto S11 = Get_Submatrix(6, 6, S.m.ptr, 10, 0, 0); // Get_Submatrix(S11.ptr,  6, 6, S.ptr, 10, 0, 0);
+    Get_Submatrix(S12.ptr,  6, 4, S.m.ptr, 10, 0, 6);
+    Get_Submatrix(S12t.ptr, 4, 6, S.m.ptr, 10, 6, 0);
+    Get_Submatrix(S22.ptr,  4, 4, S.m.ptr, 10, 6, 6);
 
     double[4 * 4] S22_1;
 
