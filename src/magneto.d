@@ -78,26 +78,26 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     const S = Matrix_x_Its_Transpose(D);
 
-    const S11  = Get_Submatrix(S, 6, 6, 0, 0);
-    const S12  = Get_Submatrix(S, 6, 4, 0, 6);
-    const S12t = Get_Submatrix(S, 4, 6, 6, 0);
-    const S22  = Get_Submatrix(S, 4, 4, 6, 6);
+    const S11  = S.submatrix(6, 6, 0, 0);
+    const S12  = S.submatrix(6, 4, 0, 6);
+    const S12t = S.submatrix(4, 6, 6, 0);
+    const S22  = S.submatrix(4, 4, 6, 6);
 
-    double[4 * 4] S22_1;
+    auto S22_1 = Matrix(4, 4); // double[4 * 4] S22_1;
 
     for (int i = 0; i < 16; i++)
-        S22_1[i] = S22.get(i);
+        S22_1.get(i) = S22.get(i);
 
-    Choleski_LU_Decomposition(S22_1.ptr, 4);
-    Choleski_LU_Inverse(S22_1.ptr, 4);
+    Choleski_LU_Decomposition(S22_1.m.ptr, 4);
+    Choleski_LU_Inverse(S22_1.m.ptr, 4);
 
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
-    const S22a = Multiply_Matrices(S22_1.ptr, 4, 4, S12t.m.ptr, 6);
+    const S22a = Multiply_Matrices(S22_1, S12t);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
-    const S22b = Multiply_Matrices(S12.m.ptr, 6, 4, S22a.m.ptr, 6);
+    const S22b = Multiply_Matrices(S12, S22a);
 
     // Calculate SS = S11 - S22b
 
@@ -116,17 +116,16 @@ Result calculate_the_thing(string filename, double user_norm) {
         0.0, 0.0, 0.0,   0.0,   0.0, -0.25,
     ], 6, 6);
 
-    double[6 * 6] E;
-    Multiply_Matrices(E.ptr, C.m.ptr, 6, 6, SS.m.ptr, 6);
+    auto E = Multiply_Matrices(C, SS);
 
-    double[6 * 6] SSS;
+    auto SSS = Matrix(6, 6);
 
-    Hessenberg_Form_Elementary(E.ptr, SSS.ptr, 6);
+    Hessenberg_Form_Elementary(E.m.ptr, SSS.m.ptr, 6);
 
     double[6] eigen_real;
     double[6] eigen_imag;
 
-    QR_Hessenberg_Matrix(E.ptr, SSS.ptr, eigen_real, eigen_imag, 6, 100);
+    QR_Hessenberg_Matrix(E.m.ptr, SSS.m.ptr, eigen_real, eigen_imag, 6, 100);
 
     int index = 0;
 
@@ -140,8 +139,8 @@ Result calculate_the_thing(string filename, double user_norm) {
     }
 
     double[6] v1 = [
-        SSS[index],      SSS[index +  6], SSS[index + 12],
-        SSS[index + 18], SSS[index + 24], SSS[index + 30]
+        SSS.get(index),      SSS.get(index +  6), SSS.get(index + 12),
+        SSS.get(index + 18), SSS.get(index + 24), SSS.get(index + 30)
     ];
 
     // normalize v1
