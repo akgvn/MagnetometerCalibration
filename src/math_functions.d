@@ -227,6 +227,49 @@ int Choleski_LU_Decomposition(double* A, int n)
     return 0;
 }
 
+int Choleski_LU_Decomposition(ref Matrix A)
+{
+    assert(A.rows == A.cols); // Square matrix
+    const n = A.rows;
+
+    foreach (k; 0..n) {
+        // Calculate the difference of the diagonal element in row k
+        // from the sum of squares of elements row k from column 0 to
+        // column k-1.
+
+        foreach (p; 0..k)
+            A.get(k, k) -= A.get(k, p) * A.get(k, p);
+
+        // If diagonal element is not positive, return the error code,
+        // the matrix is not positive definite symmetric.
+
+        if (A.get(k, k) <= 0.0)
+            return -1;
+
+        // Otherwise take the square root of the diagonal element.
+
+        A.get(k, k) = sqrt( A.get(k, k) );
+        double reciprocal = 1.0 / A.get(k, k);
+
+        // For rows i = k+1 to n-1, column k, calculate the difference
+        // between the i,k th element and the inner product of the first
+        // k-1 columns of row i and row k, then divide the difference by
+        // the diagonal element in row k.
+        // Store the transposed element in the upper triangular matrix.
+
+        foreach (i; (k + 1)..n) {
+            foreach (p; 0..k)
+                A.get(i, k) -= A.get(i, p) * A.get(k, p);
+
+            A.get(i, k) *= reciprocal;
+            A.get(k, i) = A.get(i, k);
+        }
+    }
+
+    return 0;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 //  int Choleski_LU_Inverse(double* LU,  int n)                               //
 //                                                                            //
