@@ -51,6 +51,21 @@ struct Matrix {
 
         return result;
     }
+
+    Matrix submatrix(int resultRows, int resultCols, int startRow, int startCol) const {
+        import core.stdc.string: memcpy;
+
+        const number_of_bytes = double.sizeof * resultCols;
+
+        auto result = Matrix(resultRows, resultCols);
+
+        double* S = result.m.ptr;
+        const(double)* A = this.m.ptr;
+        for (A += startRow * this.cols + startCol; resultRows > 0; A += this.cols, S += resultCols, resultRows--)
+            memcpy(S, A, number_of_bytes);
+
+        return result;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,64 +133,6 @@ Matrix Matrix_x_Its_Transpose(ref const Matrix A) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// File: get_submatrix.c                                                      //
-// Routine(s):                                                                //
-//    Get_Submatrix                                                           //
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//  void Get_Submatrix(double* S, int mrows, int mcols,                       //
-//                                   double* A, int ncols, int row, int col)  //
-//                                                                            //
-//  Description:                                                              //
-//     Copy the mrows and mcols of the nrows x ncols matrix A starting with   //
-//     A[row][col] to the submatrix S.                                        //
-//     Note that S should be declared double S[mrows][mcols] in the calling   //
-//     routine.                                                               //
-//                                                                            //
-//  Arguments:                                                                //
-//     double* S    Destination address of the submatrix.                     //
-//     int    mrows The number of rows of the matrix S.                       //
-//     int    mcols The number of columns of the matrix S.                    //
-//     double* A    Pointer to the first element of the matrix A[nrows][ncols]//
-//     int    ncols The number of columns of the matrix A.                    //
-//     int    row   The row of A corresponding to the first row of S.         //
-//     int    col   The column of A corresponding to the first column of S.   //
-//                                                                            //
-//  Return Values:                                                            //
-//     void                                                                   //
-//                                                                            //
-//  Example:                                                                  //
-//     #define N                                                              //
-//     #define M                                                              //
-//     #define NB                                                             //
-//     #define MB                                                             //
-//     double A[M][N],  B[MB][NB];                                            //
-//     int row, col;                                                          //
-//                                                                            //
-//     (your code to set the matrix A, the row number row and column number   //
-//      col)                                                                  //
-//                                                                            //
-//     if ( (row >= 0) && (col >= 0) && ((row + MB) < M) && ((col + NB) < N) )//
-//        Get_Submatrix(&B[0][0], MB, NB, &A[0][0], N, row, col);             //
-//     printf("The submatrix B is \n"); ... }                                 //
-////////////////////////////////////////////////////////////////////////////////
-
-Matrix Get_Submatrix(ref const Matrix aMatrix, int resultRows, int resultCols, int startRow, int startCol) {
-    import core.stdc.string: memcpy;
-
-    const number_of_bytes = double.sizeof * resultCols;
-
-    auto result = Matrix(resultRows, resultCols);
-
-    double* S = result.m.ptr;
-    const(double)* A = aMatrix.m.ptr;
-    for (A += startRow * aMatrix.cols + startCol; resultRows > 0; A += aMatrix.cols, S += resultCols, resultRows--)
-        memcpy(S, A, number_of_bytes);
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 //  int Choleski_LU_Decomposition(double* A, int n)                           //
 //                                                                            //
 //  Description:                                                              //
@@ -223,10 +180,10 @@ Matrix Get_Submatrix(ref const Matrix aMatrix, int resultRows, int resultCols, i
 int Choleski_LU_Decomposition(double* A, int n)
 {
     int i, k, p;
-    double* p_Lk0;                   // pointer to L[k][0]
-    double* p_Lkp;                   // pointer to L[k][p]
-    double* p_Lkk;                   // pointer to diagonal element on row k.
-    double* p_Li0;                   // pointer to L[i][0]
+    double* p_Lk0;                   // pointer to L[k][0] -> A.get(k, 0)
+    double* p_Lkp;                   // pointer to L[k][p] -> A.get(k, p)
+    double* p_Lkk;                   // pointer to L[k][k] -> A.get(k, k)
+    double* p_Li0;                   // pointer to L[i][0] -> A.get(i, 0)
     double reciprocal;
 
     for (k = 0, p_Lk0 = A; k < n; p_Lk0 += n, k++) {
