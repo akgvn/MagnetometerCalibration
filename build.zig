@@ -11,10 +11,18 @@ pub fn build(b: *std.build.Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
+    const mathLib = b.addStaticLibrarySource("math", null);
+    mathLib.addCSourceFile("src/math_functions.c", &[_][]const u8 {});
+    // mathLib.addCSourceFile("buffer.c", &[_][]const u8 {});
+    mathLib.linkLibC();
+    mathLib.install();
+
     const exe = b.addExecutable("MagnetometerCalibration", "src/main.zig");
+    exe.linkLibrary(mathLib);
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
+
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
