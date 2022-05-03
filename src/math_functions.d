@@ -100,70 +100,37 @@ struct Matrix {
 
         return result;
     }
-}
 
-////////////////////////////////////////////////////////////////////////////////
-// File: matrix_x_its_transpose.c                                             //
-// Routine(s):                                                                //
-//    Matrix_x_Its_Transpose                                                  //
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//  void Matrix_x_Its_Transpose(double* C, double* A, int nrows, int ncols )  //
-//                                                                            //
-//  Description:                                                              //
-//     Post multiply an nrows x ncols matrix A by its transpose.   The result //
-//     is an  nrows x nrows square symmetric matrix C, i.e. C = A A', where ' //
-//     denotes the transpose.                                                 //
-//     I.e. C = (Cij), where Cij = Sum (Aik Ajk) where the sum extends from   //
-//     k = 0 to ncols - 1.                                                    //
-//                                                                            //
-//     The matrix C should be declared as double C[nrows][nrows] in the       //
-//     calling routine.  The memory allocated to C should not include any     //
-//     memory allocated to A.                                                 //
-//                                                                            //
-//  Arguments:                                                                //
-//     double* C    Pointer to the first element of the matrix C.             //
-//     double* A    Pointer to the first element of the matrix A.             //
-//     int    nrows The number of rows of matrix A.                           //
-//     int    ncols The number of columns of the matrices A.                  //
-//                                                                            //
-//  Return Values:                                                            //
-//     void                                                                   //
-//                                                                            //
-//  Example:                                                                  //
-//     #define N                                                              //
-//     #define M                                                              //
-//     double A[M][N], C[M][M];                                               //
-//                                                                            //
-//     (your code to initialize the matrix A)                                 //
-//                                                                            //
-//     Matrix_x_Its_Transpose(&C[0][0], &A[0][0], M, N);                      //
-//     printf("The matrix C = AA ' is \n"); ...                               //
-////////////////////////////////////////////////////////////////////////////////
+    Matrix opBinary(string op)(const Matrix rhs) const if (op == "*") {
+        assert(this.cols == rhs.rows);
+        assert(this.m[0] != double.init);
+        assert(rhs.m[0]  != double.init);
 
-// TODO Remove this
-void Matrix_x_Its_Transpose(double* C, double* A, int nrows, int ncols)
-{
-    int i,j,k;
-    double* pAi0 = A;
-    double* pAj0;
-    double* pCi0 = C;
-    double* pCji;
+        auto m = Matrix(this.rows, rhs.cols);
 
-    for (i = 0; i < nrows; pCi0 += nrows, pAi0 += ncols, i++) {
-        pCji = pCi0 + i;
-        pAj0 = pAi0;
-        for (j = i; j < nrows; pCji += nrows, j++) {
-            *(pCi0 + j) = 0.0;
-            for (k = 0; k < ncols; k++) *(pCi0 + j) += *(pAi0 + k) * *pAj0++;
-            *pCji = *(pCi0 + j);
+        foreach (row; 0..this.rows) {
+            foreach (col; 0..rhs.cols) {
+                m.get(row, col) = 0.0;
+
+                foreach (k; 0..this.cols) {
+                    m.get(row, col) += this.get(row, k) * rhs.get(k, col);
+                }
+            }
         }
-    }
-}
 
-Matrix Matrix_x_Its_Transpose(ref const Matrix A) {
-    const T = A.transpose();
-    return Multiply_Matrices(A, T);
+        return m;
+    }
+
+    import std.traits: isNumeric;
+    Matrix opBinary(string op)(const double rhs) const if (op == "*") {
+        auto m = Matrix(this);
+        foreach (r; 0..rows) {
+            foreach (c; 0..cols) {
+                m.get(r, c) *= rhs;
+            }
+        }
+        return m;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -426,48 +393,8 @@ int Lower_Triangular_Inverse(double* L, int n)
 //     Multiply_Matrices(&C[0][0], &A[0][0], M, N, &B[0][0], NB);             //
 //     printf("The matrix C is \n"); ...                                      //
 ////////////////////////////////////////////////////////////////////////////////
-void Multiply_Matrices(double* C, const(double)* A, int nrows, int ncols, const(double)* B, int mcols)
-{
-    const(double)* pB;
-    const(double)* p_B;
-    int i,j,k;
-
-    for (i = 0; i < nrows; A += ncols, i++)
-        for (p_B = B, j = 0; j < mcols; C++, p_B++, j++) {
-            pB = p_B;
-            *C = 0.0;
-            for (k = 0; k < ncols; pB += mcols, k++)
-                *C += *(A+k) * *pB;
-        }
-}
 
 
-Matrix Multiply_Matrices(const(double)* A, int nrows, int ncols, const(double)* B, int mcols) {
-    const aMatrix = Matrix(A, nrows, ncols);
-    const bMatrix = Matrix(B, ncols, mcols);
-
-    return Multiply_Matrices(aMatrix, bMatrix);
-}
-
-Matrix Multiply_Matrices(ref const Matrix A, ref const Matrix B) {
-    assert(A.m[0] != double.init);
-    assert(B.m[0] != double.init);
-    assert(A.cols == B.rows);
-
-    auto m = Matrix(A.rows, B.cols);
-
-    foreach (row; 0..A.rows) {
-        foreach (col; 0..B.cols) {
-            m.get(row, col) = 0.0;
-
-            foreach (k; 0..A.cols) {
-                m.get(row, col) += A.get(row, k) * B.get(k, col);
-            }
-        }
-    }
-
-    return m;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -645,8 +572,7 @@ int Hessenberg_Form_Elementary(double* A, double* S, int n)
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
-static void Hessenberg_Elementary_Transform(double* H, double* S, int[] perm,
-                                                                                                 int n)
+static void Hessenberg_Elementary_Transform(double* H, double* S, int[] perm, int n)
 {
     int i, j;
     double* pS, pH;
@@ -1601,52 +1527,6 @@ static void Complex_Division(double x, double y, double u, double v,
     *a = (x * u + y * v) / q;
     *b = (y * u - x * v) / q;
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// File: transpose_square_matrix.c                                            //
-// Routine(s):                                                                //
-//    Transpose_Square_Matrix                                                 //
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//  void Transpose_Square_Matrix( double* A, int n )                          //
-//                                                                            //
-//  Description:                                                              //
-//     Take the transpose of A and store in place.                            //
-//                                                                            //
-//  Arguments:                                                                //
-//     double* A    Pointer to the first element of the matrix A.             //
-//     int    n     The number of rows and columns of the matrix A.           //
-//                                                                            //
-//  Return Values:                                                            //
-//     void                                                                   //
-//                                                                            //
-//  Example:                                                                  //
-//     #define N                                                              //
-//     double A[N][N];                                                        //
-//                                                                            //
-//     (your code to initialize the matrix A)                                 //
-//                                                                            //
-//     Transpose_Square_Matrix( &A[0][0], N);                                 //
-//     printf("The transpose of A is \n"); ...                                //
-////////////////////////////////////////////////////////////////////////////////
-void Transpose_Square_Matrix( double* A, int n )
-{
-    double* pA, pAt;
-    double temp;
-    int i,j;
-
-    for (i = 0; i < n; A += n + 1, i++) {
-        pA = A + 1;
-        pAt = A + n;
-        for (j = i+1 ; j < n; pA++, pAt += n, j++) {
-            temp = *pAt;
-            *pAt = *pA;
-            *pA = temp;
-        }
-    }
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // File: interchange_cols.c                                                   //

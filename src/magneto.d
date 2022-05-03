@@ -76,7 +76,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     const D = read_data_matrix_from_file(filename);
     int numberOfLines = D.cols;
 
-    const S = Matrix_x_Its_Transpose(D);
+    const S = (D * D.transpose());
 
     const S11  = S.submatrix(6, 6, 0, 0);
     const S12  = S.submatrix(6, 4, 0, 6);
@@ -93,11 +93,11 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
-    const S22a = Multiply_Matrices(S22_1, S12t);
+    const S22a = (S22_1 * S12t);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
-    const S22b = Multiply_Matrices(S12, S22a);
+    const S22b = (S12 * S22a);
 
     // Calculate SS = S11 - S22b
 
@@ -107,7 +107,7 @@ Result calculate_the_thing(string filename, double user_norm) {
         SS.get(i) = S11.get(i) - S22b.get(i);
 
     // Create pre-inverted constraint matrix C
-    const C = Matrix([
+    static immutable C = Matrix([
         0.0, 0.5, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.0, 0.5,   0.0,   0.0,   0.0,
         0.5, 0.5, 0.0,   0.0,   0.0,   0.0,
@@ -116,7 +116,7 @@ Result calculate_the_thing(string filename, double user_norm) {
         0.0, 0.0, 0.0,   0.0,   0.0, -0.25,
     ], 6, 6);
 
-    auto E = Multiply_Matrices(C, SS);
+    auto E = (C * SS);
 
     auto SSS = Matrix(6, 6);
 
@@ -142,7 +142,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     ], 6, 1).normalized();
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
-    const v2 = Multiply_Matrices(S22a, v1);
+    const v2 = (S22a * v1);
 
     auto v = Matrix([
          v1.get(0),  v1.get(1),  v1.get(2),  v1.get(3),  v1.get(4),
@@ -163,8 +163,8 @@ Result calculate_the_thing(string filename, double user_norm) {
     Choleski_LU_Decomposition(Q_1.m.ptr, 3);
     Choleski_LU_Inverse(Q_1.m.ptr, 3);
 
-    // Calculate B = Q-1 * U   ( 3x1 = 3x3 * 3x1)
-    const B =  Multiply_Matrices(Q_1, U);
+    // Calculate B = Q-1 * U ( 3x1 = 3x3 * 3x1)
+    const B = (Q_1 * U);
 
     Result result;
     result.combined_bias = [
@@ -175,11 +175,11 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     // First calculate QB = Q * B   ( 3x1 = 3x3 * 3x1)
 
-    const QB = Multiply_Matrices(Q, B);
+    const QB = (Q * B);
     const BT = B.transpose();
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
-    const double btqb = Multiply_Matrices(BT, QB).flattened_value();
+    const double btqb = (BT * QB).flattened_value();
 
     // Calculate hmb = sqrt(btqb - J). (double J = v[9])
     const double hmb = sqrt(btqb - v.get(9));
@@ -226,20 +226,18 @@ Result calculate_the_thing(string filename, double user_norm) {
         SSSS.get(8) /= norm3;
     }
 
-    auto Dz = Matrix([
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0
+    const _00 = sqrt(eigen_real3.get(0));
+    const _11 = sqrt(eigen_real3.get(1));
+    const _22 = sqrt(eigen_real3.get(2));
+    const Dz = Matrix([
+        _00, 0.0, 0.0,
+        0.0, _11, 0.0,
+        0.0, 0.0, _22
     ], 3, 3);
 
-    Dz.get(0, 0) = sqrt(eigen_real3.get(0));
-    Dz.get(1, 1) = sqrt(eigen_real3.get(1));
-    Dz.get(2, 2) = sqrt(eigen_real3.get(2));
+    const vdz = (SSSS * Dz);
 
-    const vdz = Multiply_Matrices(SSSS, Dz);
-    Transpose_Square_Matrix(SSSS.m.ptr, 3);
-
-    const SQ = Multiply_Matrices(vdz, SSSS);
+    const SQ = (vdz * SSSS.transpose());
 
     const double hm = user_norm;
 
@@ -248,12 +246,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     for (int i = 0; i < 9; i++)
         A_1.get(i) = SQ.get(i) * hm / hmb;
 
-    result.correction = [
-        A_1.get(0, 0), A_1.get(0, 1), A_1.get(0, 2),
-        A_1.get(1, 0), A_1.get(1, 1), A_1.get(1, 2),
-        A_1.get(2, 0), A_1.get(2, 1), A_1.get(2, 2)
-    ];
-
+    result.correction = A_1.m;
     return result;
 }
 
