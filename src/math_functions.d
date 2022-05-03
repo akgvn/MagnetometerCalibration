@@ -12,17 +12,27 @@ struct Matrix {
         m = new double[rows * cols];
     }
 
-    this(double[] matrix, int row, int col) {
+    this(double[] matrix, int row, int col) @nogc {
         rows = row;
         cols = col;
         m = matrix;
     }
 
-    ref double get(int row, int col) {
-        return m[row * rows + col];
+    this(double* matrix, int row, int col) @nogc {
+        rows = row;
+        cols = col;
+        m = matrix[0..(rows*cols)];
     }
 
-    ref double get(int pos) {
+    ref double get(int row, int col) @nogc {
+        assert(row < rows);
+        assert(col < cols);
+
+        return get(row * cols + col);
+    }
+
+    ref double get(int pos) @nogc {
+        assert(pos < (rows * cols));
         return m[pos];
     }
 }
