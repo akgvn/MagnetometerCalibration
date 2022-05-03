@@ -88,7 +88,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     for (int i = 0; i < 16; i++)
         S22_1.get(i) = S22.get(i);
 
-    Choleski_LU_Decomposition(S22_1);
+    S22_1.choleski_lu_decomposition();
     Choleski_LU_Inverse(S22_1.m.ptr, 4);
 
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
@@ -160,7 +160,7 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     auto Q_1 = Matrix(Q);
 
-    Choleski_LU_Decomposition(Q_1);
+    Q_1.choleski_lu_decomposition();
     Choleski_LU_Inverse(Q_1.m.ptr, 3);
 
     // Calculate B = Q-1 * U ( 3x1 = 3x3 * 3x1)

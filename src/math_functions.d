@@ -131,142 +131,47 @@ struct Matrix {
         }
         return m;
     }
-}
 
-////////////////////////////////////////////////////////////////////////////////
-//  int Choleski_LU_Decomposition(double* A, int n)                           //
-//                                                                            //
-//  Description:                                                              //
-//     This routine uses Choleski's method to decompose the n x n positive    //
-//     definite symmetric matrix A into the product of a lower triangular     //
-//     matrix L and an upper triangular matrix U equal to the transpose of L. //
-//     The original matrix A is replaced by L and U with L stored in the      //
-//     lower triangular part of A and the transpose U in the upper triangular //
-//     part of A. The original matrix A is therefore destroyed.               //
-//                                                                            //
-//     Choleski's decomposition is performed by evaluating, in order, the     //
-//     following pair of expressions for k = 0, ... ,n-1 :                    //
-//       L[k][k] = sqrt( A[k][k] - ( L[k][0] ^ 2 + ... + L[k][k-1] ^ 2 ) )    //
-//       L[i][k] = (A[i][k] - (L[i][0]*L[k][0] + ... + L[i][k-1]*L[k][k-1]))  //
-//                          / L[k][k]                                         //
-//     and subsequently setting                                               //
-//       U[k][i] = L[i][k], for i = k+1, ... , n-1.                           //
-//                                                                            //
-//     After performing the LU decomposition for A, call Choleski_LU_Solve    //
-//     to solve the equation Ax = B or call Choleski_LU_Inverse to calculate  //
-//     the inverse of A.                                                      //
-//                                                                            //
-//  Arguments:                                                                //
-//     double* A   On input, the pointer to the first element of the matrix   //
-//                 A[n][n].  On output, the matrix A is replaced by the lower //
-//                 and upper triangular Choleski factorizations of A.         //
-//     int     n   The number of rows and/or columns of the matrix A.         //
-//                                                                            //
-//  Return Values:                                                            //
-//     0  Success                                                             //
-//    -1  Failure - The matrix A is not positive definite symmetric (within   //
-//                  working accuracy).                                        //
-//                                                                            //
-//  Example:                                                                  //
-//     #define N                                                              //
-//     double A[N][N];                                                        //
-//                                                                            //
-//     (your code to initialize the matrix A)                                 //
-//     err = Choleski_LU_Decomposition((double* ) A, N);                      //
-//     if (err < 0) printf(" Matrix A is singular\n");                        //
-//     else { printf(" The LLt decomposition of A is \n");                    //
-//           ...                                                              //
-////////////////////////////////////////////////////////////////////////////////
-//                                                                            //
-int Choleski_LU_Decomposition(double* A, int n)
-{
-    int i, k, p;
-    double* p_Lk0;                   // pointer to L[k][0] -> A.get(k, 0)
-    double* p_Lkp;                   // pointer to L[k][p] -> A.get(k, p)
-    double* p_Lkk;                   // pointer to L[k][k] -> A.get(k, k)
-    double* p_Li0;                   // pointer to L[i][0] -> A.get(i, 0)
-    double reciprocal;
+    int choleski_lu_decomposition() {
+        assert(rows == cols); // Square matrix
+        const n = rows;
 
-    for (k = 0, p_Lk0 = A; k < n; p_Lk0 += n, k++) {
-        // Update pointer to row k diagonal element.
+        foreach (k; 0..n) {
+            // Calculate the difference of the diagonal element in row k
+            // from the sum of squares of elements row k from column 0 to
+            // column k-1.
 
-        p_Lkk = p_Lk0 + k;
-
-        // Calculate the difference of the diagonal element in row k
-        // from the sum of squares of elements row k from column 0 to
-        // column k-1.
-
-        for (p = 0, p_Lkp = p_Lk0; p < k; p_Lkp += 1,  p++)
-            *p_Lkk -= *p_Lkp * (*p_Lkp);
-
-        // If diagonal element is not positive, return the error code,
-        // the matrix is not positive definite symmetric.
-
-        if ( *p_Lkk <= 0.0 ) return -1;
-
-        // Otherwise take the square root of the diagonal element.
-
-        *p_Lkk = sqrt( *p_Lkk );
-        reciprocal = 1.0 / *p_Lkk;
-
-        // For rows i = k+1 to n-1, column k, calculate the difference
-        // between the i,k th element and the inner product of the first
-        // k-1 columns of row i and row k, then divide the difference by
-        // the diagonal element in row k.
-        // Store the transposed element in the upper triangular matrix.
-
-        p_Li0 = p_Lk0 + n;
-        for (i = k + 1; i < n; p_Li0 += n, i++) {
-            for (p = 0; p < k; p++)
-                *(p_Li0 + k) -= *(p_Li0 + p) * (*(p_Lk0 + p));
-            *(p_Li0 + k) *= reciprocal;
-            *(p_Lk0 + i) = *(p_Li0 + k);
-        }
-    }
-
-    return 0;
-}
-
-int Choleski_LU_Decomposition(ref Matrix A)
-{
-    assert(A.rows == A.cols); // Square matrix
-    const n = A.rows;
-
-    foreach (k; 0..n) {
-        // Calculate the difference of the diagonal element in row k
-        // from the sum of squares of elements row k from column 0 to
-        // column k-1.
-
-        foreach (p; 0..k)
-            A.get(k, k) -= A.get(k, p) * A.get(k, p);
-
-        // If diagonal element is not positive, return the error code,
-        // the matrix is not positive definite symmetric.
-
-        if (A.get(k, k) <= 0.0)
-            return -1;
-
-        // Otherwise take the square root of the diagonal element.
-
-        A.get(k, k) = sqrt( A.get(k, k) );
-        double reciprocal = 1.0 / A.get(k, k);
-
-        // For rows i = k+1 to n-1, column k, calculate the difference
-        // between the i,k th element and the inner product of the first
-        // k-1 columns of row i and row k, then divide the difference by
-        // the diagonal element in row k.
-        // Store the transposed element in the upper triangular matrix.
-
-        foreach (i; (k + 1)..n) {
             foreach (p; 0..k)
-                A.get(i, k) -= A.get(i, p) * A.get(k, p);
+                get(k, k) -= get(k, p) * get(k, p);
 
-            A.get(i, k) *= reciprocal;
-            A.get(k, i) = A.get(i, k);
+            // If diagonal element is not positive, return the error code,
+            // the matrix is not positive definite symmetric.
+
+            if (get(k, k) <= 0.0)
+                return -1;
+
+            // Otherwise take the square root of the diagonal element.
+
+            get(k, k) = sqrt( get(k, k) );
+            double reciprocal = 1.0 / get(k, k);
+
+            // For rows i = k+1 to n-1, column k, calculate the difference
+            // between the i,k th element and the inner product of the first
+            // k-1 columns of row i and row k, then divide the difference by
+            // the diagonal element in row k.
+            // Store the transposed element in the upper triangular matrix.
+
+            foreach (i; (k + 1)..n) {
+                foreach (p; 0..k)
+                    get(i, k) -= get(i, p) * get(k, p);
+
+                get(i, k) *= reciprocal;
+                get(k, i) = get(i, k);
+            }
         }
-    }
 
-    return 0;
+        return 0;
+    }
 }
 
 
