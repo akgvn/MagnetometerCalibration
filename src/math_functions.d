@@ -81,21 +81,21 @@ struct Matrix {
     }
 
     Matrix normalized() const {
-        assert(rows == 1);
+        assert(cols == 1); // NOTE hacky workaround, see below, col is actually row etc.
 
         auto result = Matrix(this);
 
         double norm = 0.0;
-        foreach(col; 0..cols) {
-            const val = get(0, col);
+        foreach(col; 0..rows) {
+            const val = get(col);
             norm += val * val;
         }
         norm = sqrt(norm);
 
         if (result.get(0, 0) / norm < 0.0) norm *= -1;
 
-        foreach(col; 0..cols) {
-            result.get(0, col) /= norm;
+        foreach(col; 0..rows) {
+            result.get(col) /= norm;
         }
 
         return result;
