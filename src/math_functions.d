@@ -4,8 +4,27 @@ import core.stdc.float_;
 
 struct Matrix {
     double[] m;
+    int rows, cols;
 
-    this(int row, int col) { m = new double[row * col]; }
+    this(int row, int col) {
+        rows = row;
+        cols = col;
+        m = new double[rows * cols];
+    }
+
+    this(double[] matrix, int row, int col) {
+        rows = row;
+        cols = col;
+        m = matrix;
+    }
+
+    ref double get(int row, int col) {
+        return m[row * rows + col];
+    }
+
+    ref double get(int pos) {
+        return m[pos];
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,6 +137,18 @@ void Get_Submatrix(double* S, int mrows, int mcols,
 
     for (A += row * ncols + col; mrows > 0; A += ncols, S+= mcols, mrows--)
         memcpy(S, A, number_of_bytes);
+}
+
+Matrix Get_Submatrix(int sRows, int sCols, double* A, int aCols, int row, int col) {
+    auto number_of_bytes = double.sizeof * sCols;
+
+    auto result = Matrix(sRows, sCols);
+
+    double* S = result.m.ptr;
+    for (A += row * aCols + col; sRows > 0; A += aCols, S+= sCols, sRows--)
+        memcpy(S, A, number_of_bytes);
+
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -394,6 +425,39 @@ void Multiply_Matrices(double* C, double* A, int nrows, int ncols,
             for (k = 0; k < ncols; pB += mcols, k++)
                 *C += *(A+k) * *pB;
         }
+}
+
+
+Matrix Multiply_Matrices(double* A, int nrows, int ncols, double* B, int mcols) {
+    auto m = Matrix(nrows, mcols);
+
+    for (auto row = 0; row < nrows; A += ncols, row++) {
+        for (auto p_B = B, col = 0; col < mcols; p_B++, col++) {
+            double* pB = p_B;
+            m.get(row, col) = 0.0;
+            for (auto k = 0; k < ncols; pB += mcols, k++)
+                m.get(row, col) += *(A+k) * *pB;
+        }
+    }
+
+    return m;
+}
+
+Matrix Multiply_Matrices(Matrix A, Matrix B) {
+    assert(A.cols == B.rows);
+
+    auto m = Matrix(A.rows, B.cols);
+
+    for (auto row = 0; row < A.rows; row++) {
+        for (auto col = 0; col < B.cols; col++) {
+            m.get(row, col) = 0.0;
+
+            for (auto k = 0; k < A.cols; k++)
+                m.get(row, col) += A.get(row, k) * B.get(k, col);
+        }
+    }
+
+    return m;
 }
 
 

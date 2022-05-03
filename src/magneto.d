@@ -32,7 +32,7 @@ import core.stdc.string;
 
 import math_functions;
 
-double* read_data_from_file(string filename, int* number_of_lines) {
+double* read_data_from_file(string filename, out int number_of_lines) {
     int nlines = 0;
     char[120] buf;
 
@@ -64,7 +64,7 @@ double* read_data_from_file(string filename, int* number_of_lines) {
     }
     fclose(fp);
 
-    *number_of_lines = nlines;
+    number_of_lines = nlines;
     return D;
 }
 
@@ -75,18 +75,18 @@ struct Result {
 
 Result calculate_the_thing(string filename, double user_norm) {
     int numberOfLines = 0;
-    double* D = read_data_from_file(filename, &numberOfLines);
+    double* D = read_data_from_file(filename, numberOfLines);
 
     double[10 * 10] S;
     Matrix_x_Its_Transpose(S.ptr, D, 10, numberOfLines);
     free(D);
 
-    double[6 * 6] S11;
-    double[6 * 4] S12;
-    double[4 * 6] S12t;
-    double[4 * 4] S22;
+    // double[6 * 6] S11; // auto S11  = Matrix(6, 6);
+    double[6 * 4] S12;  // auto S12  = Matrix(6, 4);
+    double[4 * 6] S12t; // auto S12t = Matrix(4, 6);
+    double[4 * 4] S22;  // auto S22  = Matrix(4, 4);
 
-    Get_Submatrix(S11.ptr,  6, 6, S.ptr, 10, 0, 0);
+    auto S11 = Get_Submatrix(6, 6, S.ptr, 10, 0, 0); // Get_Submatrix(S11.ptr,  6, 6, S.ptr, 10, 0, 0);
     Get_Submatrix(S12.ptr,  6, 4, S.ptr, 10, 0, 6);
     Get_Submatrix(S12t.ptr, 4, 6, S.ptr, 10, 6, 0);
     Get_Submatrix(S22.ptr,  4, 4, S.ptr, 10, 6, 6);
@@ -102,21 +102,21 @@ Result calculate_the_thing(string filename, double user_norm) {
     // Calculate S22a = S22_1 * S12t   4*6 = 4x4 * 4x6   C = AB
 
     double[4 * 6] S22a;
-
     Multiply_Matrices(S22a.ptr, S22_1.ptr, 4, 4, S12t.ptr, 6);
 
     // Then calculate S22b = S12 * S22a      ( 6x6 = 6x4 * 4x6)
 
-    double[6 * 6] S22b;
+    // double[6 * 6] S22b;
+    // Multiply_Matrices(S22b.ptr, S12.ptr, 6, 4, S22a.ptr, 6);
 
-    Multiply_Matrices(S22b.ptr, S12.ptr, 6, 4, S22a.ptr, 6);
+    auto S22b = Multiply_Matrices(S12.ptr, 6, 4, S22a.ptr, 6);
 
     // Calculate SS = S11 - S22b
 
     double[6 * 6] SS;
 
     for (int i = 0; i < 36; i++)
-        SS[i] = S11[i] - S22b[i];
+        SS[i] = S11.get(i) - S22b.get(i);
 
     double[6 * 6] E;
 
@@ -230,18 +230,16 @@ Result calculate_the_thing(string filename, double user_norm) {
     double btqb;
     Multiply_Matrices(&btqb, B.ptr, 1, 3, QB.ptr, 1);
 
-    // Calculate hmb = sqrt(btqb - J).
-    double J = v[9];
 
-    double hmb = sqrt(btqb - J);
+    // Calculate hmb = sqrt(btqb - J). (double J = v[9])
+    double hmb = sqrt(btqb - v[9]);
+
     // Calculate SQ, the square root of matrix Q
-
     double[3 * 3] SSSS;
 
     Hessenberg_Form_Elementary(Q.ptr, SSSS.ptr, 3);
 
-    double[3] eigen_real3;
-    double[3] eigen_imag3;
+    double[3] eigen_real3, eigen_imag3;
 
     QR_Hessenberg_Matrix(Q.ptr, SSSS.ptr, eigen_real3, eigen_imag3, 3, 100);
 
