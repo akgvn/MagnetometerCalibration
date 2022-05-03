@@ -36,13 +36,13 @@
 // "It has been tested as a console application, and reproduces exactly
 // the results given by the FORTRAN implementation of Magneto 1.2, using
 // the test file mag.txt with a user norm of 0.569."
-
+#define NULL 0
 
 double* read_data_from_file(int* number_of_lines) {
     int nlines = 0;
     char buf[120];
 
-    FILE* fp = fopen("mag.txt", "r");
+    char* fp = fopen("mag.txt", "r");
     while (fgets(buf, 100, fp) != NULL)
         nlines++;
 
