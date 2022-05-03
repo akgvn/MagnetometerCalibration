@@ -139,7 +139,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     auto v1 = Matrix([
         SSS.get(index),      SSS.get(index +  6), SSS.get(index + 12),
         SSS.get(index + 18), SSS.get(index + 24), SSS.get(index + 30)
-    ], 1, 6).normalized();
+    ], 6, 1).normalized();
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
     auto v2 = Matrix(4, 1);
@@ -169,100 +169,100 @@ Result calculate_the_thing(string filename, double user_norm) {
     Choleski_LU_Inverse(Q_1.m.ptr, 3);
 
     // Calculate B = Q-1 * U   ( 3x1 = 3x3 * 3x1)
-    double[3] B;
+    auto B = Matrix(3, 1);
 
-    Multiply_Matrices(B.ptr, Q_1.m.ptr, 3, 3, U.m.ptr, 1);
+    Multiply_Matrices(B.m.ptr, Q_1.m.ptr, 3, 3, U.m.ptr, 1);
 
     Result result;
     result.combined_bias = [
-        -B[0], // x-axis combined bias
-        -B[1], // y-axis combined bias
-        -B[2]  // z-axis combined bias
+        -B.get(0), // x-axis combined bias
+        -B.get(1), // y-axis combined bias
+        -B.get(2)  // z-axis combined bias
     ];
 
     // First calculate QB = Q * B   ( 3x1 = 3x3 * 3x1)
 
-    double[3] QB;
+    auto QB = Matrix(3, 1);
 
-    Multiply_Matrices(QB.ptr, Q.m.ptr, 3, 3, B.ptr, 1);
+    Multiply_Matrices(QB.m.ptr, Q.m.ptr, 3, 3, B.m.ptr, 1);
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
     double btqb;
-    Multiply_Matrices(&btqb, B.ptr, 1, 3, QB.ptr, 1); // flattened_value
+    Multiply_Matrices(&btqb, B.m.ptr, 1, 3, QB.m.ptr, 1); // flattened_value
 
 
     // Calculate hmb = sqrt(btqb - J). (double J = v[9])
     double hmb = sqrt(btqb - v.get(9));
 
     // Calculate SQ, the square root of matrix Q
-    double[3 * 3] SSSS;
+    auto SSSS = Matrix(3, 3);
 
-    Hessenberg_Form_Elementary(Q.m.ptr, SSSS.ptr, 3);
+    Hessenberg_Form_Elementary(Q.m.ptr, SSSS.m.ptr, 3);
 
-    double[3] eigen_real3, eigen_imag3;
+    auto eigen_real3 = Matrix(3, 1), eigen_imag3 = Matrix(3, 1);
 
-    QR_Hessenberg_Matrix(Q.m.ptr, SSSS.ptr, eigen_real3, eigen_imag3, 3, 100);
+    QR_Hessenberg_Matrix(Q.m.ptr, SSSS.m.ptr, eigen_real3.m, eigen_imag3.m, 3, 100);
 
     // normalize eigenvectors
     {
         double norm1 = sqrt(
-            SSSS[0] * SSSS[0] +
-            SSSS[3] * SSSS[3] +
-            SSSS[6] * SSSS[6]
+            SSSS.get(0) * SSSS.get(0) +
+            SSSS.get(3) * SSSS.get(3) +
+            SSSS.get(6) * SSSS.get(6)
         );
 
-        SSSS[0] /= norm1;
-        SSSS[3] /= norm1;
-        SSSS[6] /= norm1;
+        SSSS.get(0) /= norm1;
+        SSSS.get(3) /= norm1;
+        SSSS.get(6) /= norm1;
 
         double norm2 = sqrt(
-            SSSS[1] * SSSS[1] +
-            SSSS[4] * SSSS[4] +
-            SSSS[7] * SSSS[7]
+            SSSS.get(1) * SSSS.get(1) +
+            SSSS.get(4) * SSSS.get(4) +
+            SSSS.get(7) * SSSS.get(7)
         );
 
-        SSSS[1] /= norm2;
-        SSSS[4] /= norm2;
-        SSSS[7] /= norm2;
+        SSSS.get(1) /= norm2;
+        SSSS.get(4) /= norm2;
+        SSSS.get(7) /= norm2;
 
         double norm3 = sqrt(
-            SSSS[2] * SSSS[2] +
-            SSSS[5] * SSSS[5] +
-            SSSS[8] * SSSS[8]
+            SSSS.get(2) * SSSS.get(2) +
+            SSSS.get(5) * SSSS.get(5) +
+            SSSS.get(8) * SSSS.get(8)
         );
 
-        SSSS[2] /= norm3;
-        SSSS[5] /= norm3;
-        SSSS[8] /= norm3;
+        SSSS.get(2) /= norm3;
+        SSSS.get(5) /= norm3;
+        SSSS.get(8) /= norm3;
     }
 
-    double[3 * 3] Dz;
+    auto Dz = Matrix(3, 3);
 
     for (int i = 0; i < 9; i++)
-        Dz[i] = 0.0;
+        Dz.get(i) = 0.0;
 
-    Dz[0] = sqrt(eigen_real3[0]);
-    Dz[4] = sqrt(eigen_real3[1]);
-    Dz[8] = sqrt(eigen_real3[2]);
-    double[3 * 3] vdz;
+    Dz.get(0) = sqrt(eigen_real3.get(0));
+    Dz.get(4) = sqrt(eigen_real3.get(1));
+    Dz.get(8) = sqrt(eigen_real3.get(2));
 
-    Multiply_Matrices(vdz.ptr, SSSS.ptr, 3, 3, Dz.ptr, 3);
-    Transpose_Square_Matrix(SSSS.ptr, 3);
+    auto vdz = Matrix(3, 3);
+    Multiply_Matrices(vdz.m.ptr, SSSS.m.ptr, 3, 3, Dz.m.ptr, 3);
+    Transpose_Square_Matrix(SSSS.m.ptr, 3);
 
-    double[3 * 3] SQ;
-    Multiply_Matrices(SQ.ptr, vdz.ptr, 3, 3, SSSS.ptr, 3);
+    auto SQ = Matrix(3, 3);
+    Multiply_Matrices(SQ.m.ptr, vdz.m.ptr, 3, 3, SSSS.m.ptr, 3);
 
     const double hm = user_norm;
 
-    double[3 * 3] A_1;
+    auto A_1 = Matrix(3, 3);
 
     for (int i = 0; i < 9; i++)
-        A_1[i] = SQ[i] * hm / hmb;
+        A_1.get(i) = SQ.get(i) * hm / hmb;
 
     result.correction = [
-        A_1[0 * 3], A_1[0 * 3 + 1], A_1[0 * 3 + 2],
-        A_1[1 * 3], A_1[1 * 3 + 1], A_1[1 * 3 + 2],
-        A_1[2 * 3], A_1[2 * 3 + 1], A_1[2 * 3 + 2]
+        A_1.get(0, 0), A_1.get(0, 1), A_1.get(0, 2),
+        A_1.get(1, 0), A_1.get(1, 1), A_1.get(1, 2),
+        A_1.get(2, 0), A_1.get(2, 1), A_1.get(2, 2)
     ];
 
     return result;
