@@ -8,7 +8,42 @@ fn calculate_the_thing() Result {
     return .{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 }
 
+fn parse_line(line: []const u8) ![3]f64 {
+    const parseFloat = std.fmt.parseFloat;
+    const tokenize = std.mem.tokenize;
+
+    var line_iterator = tokenize(u8, line, "\t\n\x0D"); // \x0D is ASCII 13, carriage return. parseFloat fails when the slice includes that.
+
+    const first = try parseFloat(f64, line_iterator.next().?);
+    const second = try parseFloat(f64, line_iterator.next().?);
+    const third = try parseFloat(f64, line_iterator.next().?);
+
+    return [3]f64{ first, second, third };
+}
+
+fn read_file_data_to_matrix() !Matrix {
+    const cwd = std.fs.cwd();
+    var file = try cwd.openFile("mag.txt", .{});
+    defer file.close();
+
+    const bufferedReader = std.io.bufferedReader;
+    const reader = bufferedReader(file.reader()).reader();
+
+    // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    // defer arena.deinit();
+    // const ally = &arena.allocator;
+
+    var buf: [4096]u8 = undefined;
+    while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+        const line_data = try parse_line(line);
+    }
+
+    return Matrix.init(&.{}, 1, 1);
+}
+
 pub fn main() anyerror!void {
+    _ = try read_file_data_to_matrix();
+
     var mat = [_]f64{
         0.956973,  -0.017809, 0.006564,
         -0.017809, 0.964533,  0.003304,
