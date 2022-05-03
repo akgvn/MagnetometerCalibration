@@ -142,9 +142,7 @@ Result calculate_the_thing(string filename, double user_norm) {
     ], 6, 1).normalized();
 
     // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
-    auto v2 = Matrix(4, 1);
-
-    Multiply_Matrices(v2.m.ptr, S22a.m.ptr, 4, 6, v1.m.ptr, 1);
+    const v2 = Multiply_Matrices(S22a, v1);
 
     auto v = Matrix([
          v1.get(0),  v1.get(1),  v1.get(2),  v1.get(3),  v1.get(4),
@@ -160,18 +158,13 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     auto U = Matrix([ v.get(6), v.get(7), v.get(8) ], 3, 1);
 
-    auto Q_1 = Matrix(3, 3);
-
-    for (int i = 0; i < 9; i++)
-        Q_1.get(i) = Q.get(i);
+    auto Q_1 = Matrix(Q);
 
     Choleski_LU_Decomposition(Q_1.m.ptr, 3);
     Choleski_LU_Inverse(Q_1.m.ptr, 3);
 
     // Calculate B = Q-1 * U   ( 3x1 = 3x3 * 3x1)
-    auto B = Matrix(3, 1);
-
-    Multiply_Matrices(B.m.ptr, Q_1.m.ptr, 3, 3, U.m.ptr, 1);
+    const B =  Multiply_Matrices(Q_1, U);
 
     Result result;
     result.combined_bias = [
@@ -182,17 +175,14 @@ Result calculate_the_thing(string filename, double user_norm) {
 
     // First calculate QB = Q * B   ( 3x1 = 3x3 * 3x1)
 
-    auto QB = Matrix(3, 1);
-
-    Multiply_Matrices(QB.m.ptr, Q.m.ptr, 3, 3, B.m.ptr, 1);
+    const QB = Multiply_Matrices(Q, B);
+    const BT = B.transpose();
 
     // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
-    double btqb;
-    Multiply_Matrices(&btqb, B.m.ptr, 1, 3, QB.m.ptr, 1); // flattened_value
-
+    const double btqb = Multiply_Matrices(BT, QB).flattened_value();
 
     // Calculate hmb = sqrt(btqb - J). (double J = v[9])
-    double hmb = sqrt(btqb - v.get(9));
+    const double hmb = sqrt(btqb - v.get(9));
 
     // Calculate SQ, the square root of matrix Q
     auto SSSS = Matrix(3, 3);
@@ -236,21 +226,20 @@ Result calculate_the_thing(string filename, double user_norm) {
         SSSS.get(8) /= norm3;
     }
 
-    auto Dz = Matrix(3, 3);
+    auto Dz = Matrix([
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0
+    ], 3, 3);
 
-    for (int i = 0; i < 9; i++)
-        Dz.get(i) = 0.0;
+    Dz.get(0, 0) = sqrt(eigen_real3.get(0));
+    Dz.get(1, 1) = sqrt(eigen_real3.get(1));
+    Dz.get(2, 2) = sqrt(eigen_real3.get(2));
 
-    Dz.get(0) = sqrt(eigen_real3.get(0));
-    Dz.get(4) = sqrt(eigen_real3.get(1));
-    Dz.get(8) = sqrt(eigen_real3.get(2));
-
-    auto vdz = Matrix(3, 3);
-    Multiply_Matrices(vdz.m.ptr, SSSS.m.ptr, 3, 3, Dz.m.ptr, 3);
+    const vdz = Multiply_Matrices(SSSS, Dz);
     Transpose_Square_Matrix(SSSS.m.ptr, 3);
 
-    auto SQ = Matrix(3, 3);
-    Multiply_Matrices(SQ.m.ptr, vdz.m.ptr, 3, 3, SSSS.m.ptr, 3);
+    const SQ = Multiply_Matrices(vdz, SSSS);
 
     const double hm = user_norm;
 
