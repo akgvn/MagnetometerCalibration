@@ -8,8 +8,25 @@ const Matrix = types.Matrix;
 const CalibrationResult = types.CalibrationResult;
 const FileReadResult = types.FileReadResult;
 
-fn calculateTheThing() CalibrationResult {
-    return .{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
+fn calculateTheThing() !CalibrationResult {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var fileData = try readFileData(arena.allocator());
+
+    var S = mapi.multiplyMatrixWithTranspose(fileData.list, 10, fileData.line_count);
+    arena.deinit();
+
+    // const S11 = S.getSubmatrix(6, 6, 0, 0);
+    // const S12 = S.getSubmatrix(6, 4, 0, 6);
+    const S12t = S.getSubmatrix(4, 6, 6, 0);
+    const S22 = S.getSubmatrix(4, 4, 6, 6);
+
+    var S22_1 = mapi.choleskiDecomposition(4, S22);
+    S22_1 = mapi.choleskiInverse(4, S22_1);
+
+    const S22a = mapi.multiplyMatrices(@TypeOf(S22_1), @TypeOf(S12t), &S22_1, &S12t);
+    std.log.info("{}", .{S22a});
+
+    return CalibrationResult{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 }
 
 fn parseLine(line: []const u8) ![3]f64 {
@@ -23,6 +40,22 @@ fn parseLine(line: []const u8) ![3]f64 {
     const third = try parseFloat(f64, line_iterator.next().?);
 
     return [3]f64{ first, second, third };
+}
+
+fn get(item: []f64, row: i32, col: i32, rows: i32) *f64 {
+    const pos = @intCast(usize, row * rows + col);
+    return &item[pos];
+}
+
+fn transpose(mat: []f64, rows: i32, cols: i32) []f64 {
+    var row: i32 = 0;
+    var col: i32 = 0;
+    while (row < rows) : (row += 1) {
+        while (col < cols) : (col += 1) {
+            get(mat, row, col, rows).* = get(mat, col, row, rows).*;
+        }
+    }
+    return mat;
 }
 
 fn readFileData(allocator: Allocator) !FileReadResult {
@@ -56,22 +89,11 @@ fn readFileData(allocator: Allocator) !FileReadResult {
         line_count += 1;
     }
 
-    return FileReadResult{ .list = list.toOwnedSlice(), .line_count = line_count };
+    return FileReadResult{ .list = transpose(list.toOwnedSlice(), 10, line_count), .line_count = line_count };
 }
 
 pub fn main() anyerror!void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    var fileData = try readFileData(arena.allocator());
-
-    var S = mapi.multiplyMatrixWithTranspose(fileData.list, 10, fileData.line_count);
-    arena.deinit();
-
-    const S11 = S.getSubmatrix(6, 6, 0, 0);
-    // const S12 = S.getSubmatrix(6, 4, 0, 6);
-    // const S12t = S.getSubmatrix(4, 6, 6, 0);
-    // const S22 = S.getSubmatrix(4, 4, 6, 6);
-
-    std.log.info("S11 is {any}", .{S11});
+    _ = try calculateTheThing();
 }
 
 test "Mag.txt test" {

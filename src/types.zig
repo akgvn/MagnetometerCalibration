@@ -24,6 +24,9 @@ pub fn Matrix(comptime rows: u32, comptime cols: u32) type {
 
             return result;
         }
+
+        pub fn rowCount() comptime_int { return rows; }
+        pub fn colCount() comptime_int { return cols; }
     };
 }
 

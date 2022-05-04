@@ -81,6 +81,10 @@ int main() {
     Matrix_x_Its_Transpose(S, D, 10, numberOfLines);
     free(D);
 
+    printf("S is: ");
+    for (int i = 0; i < (100); i++)
+        printf("%lf, ", S[i]);
+
     double S11[6 * 6];
     double S12[6 * 4];
     double S12t[4 * 6];
