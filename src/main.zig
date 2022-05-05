@@ -41,13 +41,56 @@ fn calculateTheThing() !CalibrationResult {
 
     const SSS = mapi.hessenbergFormElementary(&E);
 
-    var eigen_real: Matrix(1, 6) = undefined;
-    var eigen_imag: Matrix(1, 6) = undefined;
+    var eigen_real = Matrix(6, 1).zeroed();
+    var eigen_imag = Matrix(6, 1).zeroed();
+
     _ = mapi.hessenbergQRMatrix(&E, &SSS, 6, &eigen_real, &eigen_imag, 100);
 
-    std.log.info("{}", .{SSS});
+    var maxIdx: u32 = 0;
+    var maxval = eigen_real.get(0, 0);
+    var i: u32 = 1;
+    while (i < 6) : (i += 1) {
+        if (eigen_real.get(0, i) > maxval) {
+            maxval = eigen_real.get(0, i);
+            maxIdx = i;
+        }
+    }
 
-    return CalibrationResult{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
+    const v1 = Matrix(6, 1).init(.{ SSS.get(0, maxIdx), SSS.get(1, maxIdx), SSS.get(2, maxIdx), SSS.get(3, maxIdx), SSS.get(4, maxIdx), SSS.get(5, maxIdx) }).normalized();
+
+    // Calculate v2 = S22a * v1      ( 4x1 = 4x6 * 6x1)
+
+    const v2 = mapi.multiplyMatrices(&S22a, &v1);
+
+    const v = Matrix(1, 10).init(.{ v1.get(0, 0), v1.get(0, 1), v1.get(0, 2), v1.get(0, 3), v1.get(0, 4), v1.get(0, 5), -v2.get(0, 0), -v2.get(0, 1), -v2.get(0, 2), -v2.get(0, 3) });
+
+    const Q = Matrix(3, 3).init(.{ v.get(0, 0), v.get(0, 5), v.get(0, 4), v.get(0, 5), v.get(0, 1), v.get(0, 3), v.get(0, 4), v.get(0, 3), v.get(0, 2) });
+
+    const U = Matrix(3, 1).init(.{ v.get(0, 6), v.get(0, 7), v.get(0, 8) });
+
+    const Q_1: Matrix(3, 3) = Q.choleskiDecomposed().choleskiInversed();
+
+    // Calculate B = Q-1 * U ( 3x1 = 3x3 * 3x1)
+    var B = mapi.multiplyMatrices(&Q_1, &U);
+
+    B.getMut(0, 0).* = -B.get(0, 0); // x-axis combined bias
+    B.getMut(0, 1).* = -B.get(0, 1); // y-axis combined bias
+    B.getMut(0, 2).* = -B.get(0, 2); // z-axis combined bias
+
+    // Then calculate btqb = BT * QB    ( 1x1 = 1x3 * 3x1)
+
+    const QB = mapi.multiplyMatrices(Q, B);
+    const BT = Matrix(1, 3).init(B.data);
+    const btqb = mapi.multiplyMatrices(BT, QB).get(0, 0);
+
+    // Calculate hmb = sqrt(btqb - J).
+    const J = v.get(0, 9);
+
+    const hmb = std.math.sqrt(btqb - J);
+
+    std.log.info("{}", .{hmb});
+
+    return CalibrationResult{ .bias = B.data, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 }
 
 fn parseLine(line: []const u8) ![3]f64 {
