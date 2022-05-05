@@ -12,7 +12,7 @@ pub fn build(b: *std.build.Builder) void {
     const mode = b.standardReleaseOptions();
 
     const mathLib = b.addStaticLibrarySource("math", null);
-    mathLib.addCSourceFile("src/math_functions.c", &[_][]const u8 {});
+    mathLib.addCSourceFile("src/math_functions.c", &[_][]const u8{});
     mathLib.linkLibC();
     mathLib.install();
 
@@ -32,6 +32,7 @@ pub fn build(b: *std.build.Builder) void {
     run_step.dependOn(&run_cmd.step);
 
     const exe_tests = b.addTest("src/main.zig");
+    exe_tests.linkLibrary(mathLib);
     exe_tests.setTarget(target);
     exe_tests.setBuildMode(mode);
 

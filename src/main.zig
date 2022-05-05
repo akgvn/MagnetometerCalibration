@@ -169,5 +169,6 @@ test "Mag.txt test" {
         0.006564,  0.003304,  1.036145,
     } };
 
-    try std.testing.expectEqual(expected, result);
+    try std.testing.expectEqual(expected.bias, result.bias);
+    try std.testing.expectEqual(expected.corr, result.corr);
 }
