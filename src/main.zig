@@ -15,15 +15,19 @@ fn calculateTheThing() !CalibrationResult {
     var S = mapi.multiplyMatrixWithTranspose(fileData.list, 10, fileData.line_count);
     arena.deinit();
 
-    // const S11 = S.getSubmatrix(6, 6, 0, 0);
-    // const S12 = S.getSubmatrix(6, 4, 0, 6);
+    const S11 = S.getSubmatrix(6, 6, 0, 0);
+    const S12 = S.getSubmatrix(6, 4, 0, 6);
     const S12t = S.getSubmatrix(4, 6, 6, 0);
     const S22 = S.getSubmatrix(4, 4, 6, 6);
 
     const S22_1 = S22.choleskiDecomposed().choleskiInversed();
 
     const S22a = mapi.multiplyMatrices(&S22_1, &S12t);
-    std.log.info("{}", .{S22a});
+    const S22b = mapi.multiplyMatrices(&S12, &S22a);
+
+    const SS = S11.substract(&S22b);
+
+    std.log.info("{}", .{SS});
 
     return CalibrationResult{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 }

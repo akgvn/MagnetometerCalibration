@@ -18,8 +18,12 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
             return .{ .data = data };
         }
 
-        pub fn get(self: *Self, row: u64, col: u64) *f64 {
-            return &self.data[row * self.rows + col];
+        pub fn getMut(self: *Self, row: u64, col: u64) *f64 {
+            return &self.data[row * Self.rows + col];
+        }
+        
+        pub fn get(self: *const Self, row: u64, col: u64) f64 {
+            return self.data[row * Self.rows + col];
         }
 
         extern fn Get_Submatrix(S: [*]f64, mrows: c_int, mcols: c_int, A: [*]const f64, ncols: c_int, row: c_int, col: c_int) void;
@@ -31,6 +35,20 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
 
         pub fn isSquare() bool {
             return rows == cols;
+        }
+
+        pub fn substract(self: *const Self, rhs: *const Self) Self {
+            var result = self.*;
+
+            var row: u32 = 0;
+            var col: u32 = 0;
+            while (row < rows) : (row += 1) {
+                while (col < cols) : (col += 1) {
+                    result.getMut(row, col).* = self.get(row, col) - rhs.get(row, col);
+                }
+            }
+
+            return result;
         }
 
         extern fn Choleski_LU_Decomposition(A: [*]f64, n: c_int) c_int;
@@ -81,5 +99,5 @@ pub fn multipliedMatrixType(comptime A: type, comptime B: type) type {
     const dereferencedBType = if (std.meta.trait.isPtrTo(.Struct)(B)) std.meta.Child(B) else B;
     comptime assert(areMultipliableMatrices(dereferencedAType, dereferencedBType));
 
-    return Matrix(dereferencedAType.cols, dereferencedBType.cols);
+    return Matrix(dereferencedAType.rows, dereferencedBType.cols);
 }
