@@ -23,8 +23,8 @@ const multipliedMatrixType = types.multipliedMatrixType;
 extern fn Multiply_Matrices(C: [*]f64, A: [*]const f64, nrows: c_int, ncols: c_int, B: [*]const f64, mcols: c_int) void;
 pub fn multiplyMatrices(A: anytype, B: anytype) multipliedMatrixType(@TypeOf(A), @TypeOf(B)) {
     var result = multipliedMatrixType(@TypeOf(A), @TypeOf(B)).zeroed();
-    const typeA = comptime if (std.meta.trait.isPtrTo(.Struct)(@TypeOf(A))) std.meta.Child(@TypeOf(A)) else @TypeOf(A);
-    const typeB = comptime if (std.meta.trait.isPtrTo(.Struct)(@TypeOf(B))) std.meta.Child(@TypeOf(B)) else @TypeOf(B);
+    const typeA = types.getDereferencedOrSame(@TypeOf(A));
+    const typeB = types.getDereferencedOrSame(@TypeOf(B));
     Multiply_Matrices(&result.data, &A.data, typeA.rows, typeA.cols, &B.data, typeB.cols);
     return result;
 }

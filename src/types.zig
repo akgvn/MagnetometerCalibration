@@ -106,14 +106,20 @@ pub fn isMatrix(comptime T: type) bool {
     return isMatrixRef(T) or isMatrixValue(T);
 }
 
-pub fn areMultipliableMatrices(comptime T: type, comptime K: type) bool {
+fn areMultipliableMatrices(comptime T: type, comptime K: type) bool {
     return (isMatrix(T) and isMatrix(K) and (@field(T, "cols") == @field(K, "rows")));
 }
 
-pub fn multipliedMatrixType(comptime A: type, comptime B: type) type {
-    const dereferencedAType = if (std.meta.trait.isPtrTo(.Struct)(A)) std.meta.Child(A) else A;
-    const dereferencedBType = if (std.meta.trait.isPtrTo(.Struct)(B)) std.meta.Child(B) else B;
-    comptime assert(areMultipliableMatrices(dereferencedAType, dereferencedBType));
+pub fn getDereferencedOrSame(comptime T: type) type {
+    return if (std.meta.trait.isPtrTo(.Struct)(T)) std.meta.Child(T)
+    else T;
+}
 
-    return Matrix(dereferencedAType.rows, dereferencedBType.cols);
+pub fn multipliedMatrixType(comptime A: type, comptime B: type) type {
+    const dA = getDereferencedOrSame(A);
+    const dB = getDereferencedOrSame(B);
+
+    comptime assert(areMultipliableMatrices(dA, dB));
+
+    return Matrix(dA.rows, dB.cols);
 }
