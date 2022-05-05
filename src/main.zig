@@ -39,7 +39,9 @@ fn calculateTheThing() !CalibrationResult {
 
     const E = mapi.multiplyMatrices(&C, &SS);
 
-    std.log.info("{}", .{E});
+    const SSS = mapi.hessenbergFormElementary(&E);
+
+    std.log.info("{}", .{SSS});
 
     return CalibrationResult{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 }

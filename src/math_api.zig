@@ -16,6 +16,7 @@ pub fn multiplyMatrixWithTranspose(matrix: []f64, comptime nrows: i32, ncols: i3
 }
 
 const isMatrix = types.isMatrix;
+const isMatrixRef = types.isMatrixRef;
 const areMultipliableMatrices = types.areMultipliableMatrices;
 const multipliedMatrixType = types.multipliedMatrixType;
 
@@ -28,8 +29,19 @@ pub fn multiplyMatrices(A: anytype, B: anytype) multipliedMatrixType(@TypeOf(A),
     return result;
 }
 
-extern fn Hessenberg_Form_Elementary(A: [*]f64, S: [*]f64, n: c_int) c_int;
-// pub fn hessenbergFormElementary(A: Matrix, S: Matrix, n: i32) i32;
+fn hessenbergReturnType(comptime T: type) type {
+    assert(isMatrixRef(T));
+    const n = @typeInfo(T).Pointer.child.rows;
+    return Matrix(n, n);
+}
+
+extern fn Hessenberg_Form_Elementary(A: [*]const f64, S: [*]f64, n: c_int) c_int; // a is square, n is it's col count, s is output
+pub fn hessenbergFormElementary(matrix: anytype) hessenbergReturnType(@TypeOf(matrix)) {
+    const returnType = hessenbergReturnType(@TypeOf(matrix));
+    var result: returnType = undefined;
+    _ = Hessenberg_Form_Elementary(&matrix.data, &result.data, returnType.rows);
+    return result;
+}
 
 extern fn QR_Hessenberg_Matrix(H: [*]f64, S: [*]f64, eigen_real: [*]f64, eigen_imag: [*]f64, n: c_int, max_iteration_count: c_int) c_int;
 // pub fn QR_Hessenberg_Matrix(H: Matrix, S: Matrix, eigen_real: Matrix, eigen_imag: Matrix, n: i32, max_iteration_count: i32) i32;

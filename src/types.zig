@@ -82,8 +82,7 @@ pub const CalibrationResult = struct { bias: [3]f64, corr: [9]f64 };
 pub const FileReadResult = struct { list: []f64, line_count: i32 };
 
 /// Only returns true for types produced by calls to `Matrix`.
-pub fn isMatrix(comptime T: type) bool {
-    if (@typeInfo(T) == .Pointer) return isMatrix(@typeInfo(T).Pointer.child);
+pub fn isMatrixValue(comptime T: type) bool {
     if (@typeInfo(T) != .Struct) return false;
 
     if (!@hasDecl(T, "rows")) return false;
@@ -96,6 +95,15 @@ pub fn isMatrix(comptime T: type) bool {
     if (@TypeOf(T.cols) != u32) return false;
 
     return Matrix(T.rows, T.cols) == T;
+}
+
+pub fn isMatrixRef(comptime T: type) bool {
+    if (@typeInfo(T) == .Pointer) return isMatrix(@typeInfo(T).Pointer.child);
+    return false;
+}
+
+pub fn isMatrix(comptime T: type) bool {
+    return isMatrixRef(T) or isMatrixValue(T);
 }
 
 pub fn areMultipliableMatrices(comptime T: type, comptime K: type) bool {
