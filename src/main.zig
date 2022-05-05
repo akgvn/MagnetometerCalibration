@@ -161,7 +161,7 @@ pub fn main() anyerror!void {
 }
 
 test "Mag.txt test" {
-    const result = calculateTheThing();
+    const result = try calculateTheThing();
 
     const expected = CalibrationResult{ .bias = [_]f64{ -0.021659, 0.013250, -0.026167 }, .corr = [_]f64{
         0.956973,  -0.017809, 0.006564,
