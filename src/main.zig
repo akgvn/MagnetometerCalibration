@@ -20,8 +20,7 @@ fn calculateTheThing() !CalibrationResult {
     const S12t = S.getSubmatrix(4, 6, 6, 0);
     const S22 = S.getSubmatrix(4, 4, 6, 6);
 
-    var S22_1 = mapi.choleskiDecomposition(S22);
-    S22_1 = mapi.choleskiInverse(S22_1);
+    const S22_1 = S22.choleskiDecomposed().choleskiInversed();
 
     const S22a = mapi.multiplyMatrices(&S22_1, &S12t);
     std.log.info("{}", .{S22a});

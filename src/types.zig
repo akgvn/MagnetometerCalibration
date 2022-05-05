@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
     return struct {
@@ -24,15 +25,28 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
         extern fn Get_Submatrix(S: [*]f64, mrows: c_int, mcols: c_int, A: [*]const f64, ncols: c_int, row: c_int, col: c_int) void;
         pub fn getSubmatrix(self: *const Self, comptime mrows: i32, comptime mcols: i32, row: i32, col: i32) Matrix(mrows, mcols) {
             var result = Matrix(mrows, mcols).zeroed();
-
-            // const Get_Submatrix = @import("math_api.zig").Get_Submatrix;
             Get_Submatrix(&result.data, mrows, mcols, &self.data, cols, row, col);
-
             return result;
         }
 
         pub fn isSquare() bool {
             return rows == cols;
+        }
+
+        extern fn Choleski_LU_Decomposition(A: [*]f64, n: c_int) c_int;
+        pub fn choleskiDecomposed(self: *const Self) Self {
+            comptime assert(Self.isSquare());
+            var result = self.*;
+            _ = Choleski_LU_Decomposition(&result.data, Self.cols);
+            return result;
+        }
+
+        extern fn Choleski_LU_Inverse(LU: [*]f64, n: c_int) c_int;
+        pub fn choleskiInversed(self: *const Self) Self {
+            comptime assert(Self.isSquare());
+            var result = self.*;
+            _ = Choleski_LU_Inverse(&result.data, Self.cols);
+            return result;
         }
     };
 }
@@ -63,7 +77,6 @@ pub fn areMultipliableMatrices(comptime T: type, comptime K: type) bool {
 }
 
 pub fn multipliedMatrixType(comptime A: type, comptime B: type) type {
-    const assert = std.debug.assert;
     const dereferencedAType = if (std.meta.trait.isPtrTo(.Struct)(A)) std.meta.Child(A) else A;
     const dereferencedBType = if (std.meta.trait.isPtrTo(.Struct)(B)) std.meta.Child(B) else B;
     comptime assert(areMultipliableMatrices(dereferencedAType, dereferencedBType));

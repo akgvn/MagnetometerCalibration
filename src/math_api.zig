@@ -15,21 +15,6 @@ pub fn multiplyMatrixWithTranspose(matrix: []f64, comptime nrows: i32, ncols: i3
     return Matrix(nrows, nrows){ .data = result };
 }
 
-extern fn Choleski_LU_Decomposition(A: [*]f64, n: c_int) c_int;
-pub fn choleskiDecomposition(m: anytype) @TypeOf(m) {
-    comptime assert(isMatrix(@TypeOf(m)) and @TypeOf(m).isSquare());
-    var result = m;
-    _ = Choleski_LU_Decomposition(&result.data, @TypeOf(m).cols);
-    return result;
-}
-
-extern fn Choleski_LU_Inverse(LU: [*]f64, n: c_int) c_int;
-pub fn choleskiInverse(m: anytype) @TypeOf(m) {
-    comptime assert(isMatrix(@TypeOf(m)) and @TypeOf(m).isSquare());
-    var result = m;
-    _ = Choleski_LU_Inverse(&result.data, @TypeOf(m).cols);
-    return result;
-}
 
 const isMatrix = types.isMatrix;
 const areMultipliableMatrices = types.areMultipliableMatrices;
