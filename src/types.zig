@@ -14,14 +14,14 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
             return .{ .data = .{0} ** (rows * cols) };
         }
 
-        pub fn init(data: []f64) Self {
+        pub fn init(data: [rowCount * colCount]f64) Self {
             return .{ .data = data };
         }
 
         pub fn getMut(self: *Self, row: u64, col: u64) *f64 {
             return &self.data[row * Self.rows + col];
         }
-        
+
         pub fn get(self: *const Self, row: u64, col: u64) f64 {
             return self.data[row * Self.rows + col];
         }
@@ -64,6 +64,14 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
             comptime assert(Self.isSquare());
             var result = self.*;
             _ = Choleski_LU_Inverse(&result.data, Self.cols);
+            return result;
+        }
+
+        extern fn Transpose_Square_Matrix(A: [*]f64, n: c_int) void;
+        pub fn transposed(self: *Self) Self {
+            comptime assert(Self.isSquare()); // Only square matrices are supported for now!
+            var result = self.*;
+            _ = Transpose_Square_Matrix(&result.data, Self.cols);
             return result;
         }
     };

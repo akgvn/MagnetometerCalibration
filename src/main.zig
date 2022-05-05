@@ -27,7 +27,19 @@ fn calculateTheThing() !CalibrationResult {
 
     const SS = S11.substract(&S22b);
 
-    std.log.info("{}", .{SS});
+    // Create pre-inverted constraint matrix C
+    const C = Matrix(6, 6).init(.{
+        0.0, 0.5, 0.5, 0.0,   0.0,   0.0,
+        0.5, 0.0, 0.5, 0.0,   0.0,   0.0,
+        0.5, 0.5, 0.0, 0.0,   0.0,   0.0,
+        0.0, 0.0, 0.0, -0.25, 0.0,   0.0,
+        0.0, 0.0, 0.0, 0.0,   -0.25, 0.0,
+        0.0, 0.0, 0.0, 0.0,   0.0,   -0.25,
+    });
+
+    const E = mapi.multiplyMatrices(&C, &SS);
+
+    std.log.info("{}", .{E});
 
     return CalibrationResult{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
 }
