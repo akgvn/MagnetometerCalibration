@@ -43,5 +43,8 @@ pub fn hessenbergFormElementary(matrix: anytype) hessenbergReturnType(@TypeOf(ma
     return result;
 }
 
-extern fn QR_Hessenberg_Matrix(H: [*]f64, S: [*]f64, eigen_real: [*]f64, eigen_imag: [*]f64, n: c_int, max_iteration_count: c_int) c_int;
-// pub fn QR_Hessenberg_Matrix(H: Matrix, S: Matrix, eigen_real: Matrix, eigen_imag: Matrix, n: i32, max_iteration_count: i32) i32;
+extern fn QR_Hessenberg_Matrix(H: [*]const f64, S: [*]const f64, eigen_real: [*]f64, eigen_imag: [*]f64, n: c_int, max_iteration_count: c_int) c_int;
+pub fn hessenbergQRMatrix(H: anytype, S: anytype, comptime n: i32, eigen_real: *Matrix(1, n), eigen_imag: *Matrix(1, n), comptime max_iteration_count: i32) i32 {
+    comptime assert(isMatrixRef(@TypeOf(H)) and isMatrixRef(@TypeOf(S)));
+    return QR_Hessenberg_Matrix(&H.data, &S.data, &eigen_real.data, &eigen_imag.data, n, max_iteration_count);
+}

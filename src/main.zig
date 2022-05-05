@@ -41,6 +41,10 @@ fn calculateTheThing() !CalibrationResult {
 
     const SSS = mapi.hessenbergFormElementary(&E);
 
+    var eigen_real: Matrix(1, 6) = undefined;
+    var eigen_imag: Matrix(1, 6) = undefined;
+    _ = mapi.hessenbergQRMatrix(&E, &SSS, 6, &eigen_real, &eigen_imag, 100);
+
     std.log.info("{}", .{SSS});
 
     return CalibrationResult{ .bias = .{ 0.0, 0.0, 0.0 }, .corr = .{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } };
