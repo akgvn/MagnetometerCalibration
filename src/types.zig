@@ -50,7 +50,7 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
             var sum: f64 = 0.0;
 
             comptime var col = 0;
-            inline while (col < Self.cols): (col += 1) {
+            inline while (col < Self.cols) : (col += 1) {
                 const val = self.get(0, col);
                 sum += val * val;
             }
@@ -58,21 +58,20 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
             return std.math.sqrt(sum); // TODO ??? is this right
         }
 
-        pub fn normalized(self: *Self) Self {
+        pub fn normalized(self: *const Self) Self {
             comptime assert(Self.cols == 1); // Must be Vector
             var result = self.*;
             const n = self.norm();
 
-
-            comptime var col = 0;
-            inline while (col < @TypeOf(result).cols): (col += 1) {
-                self.getMut(0, col).* /= n;
+            var col: u32 = 0;
+            while (col < @TypeOf(result).cols) : (col += 1) {
+                result.getMut(0, col).* = self.get(0, col) / n;
             }
 
             if (self.get(0, 0) < 0) {
-                comptime col = 0;
-                inline while (col < @TypeOf(result).cols): (col += 1) {
-                    self.getMut(0, col).* = -1;
+                col = 0;
+                while (col < @TypeOf(result).cols) : (col += 1) {
+                    result.getMut(0, col).* = -1;
                 }
             }
 
@@ -124,9 +123,6 @@ pub fn isMatrixValue(comptime T: type) bool {
 
     if (!@hasDecl(T, "rows")) return false;
     if (!@hasDecl(T, "cols")) return false;
-
-    if (!std.meta.declarationInfo(T, "rows").is_pub) return false;
-    if (!std.meta.declarationInfo(T, "cols").is_pub) return false;
 
     if (@TypeOf(T.rows) != u32) return false;
     if (@TypeOf(T.cols) != u32) return false;

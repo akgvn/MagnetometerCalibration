@@ -107,7 +107,7 @@ fn parseLine(line: []const u8) ![3]f64 {
 }
 
 fn get(item: []f64, row: i32, col: i32, rows: i32) *f64 {
-    const pos = @intCast(usize, row * rows + col);
+    const pos = @as(usize, @intCast(row * rows + col));
     return &item[pos];
 }
 
@@ -127,7 +127,8 @@ fn readFileData(allocator: Allocator) !FileReadResult {
     defer file.close();
 
     const bufferedReader = std.io.bufferedReader;
-    const reader = bufferedReader(file.reader()).reader();
+    var breader = bufferedReader(file.reader());
+    const reader = breader.reader();
 
     var list = std.ArrayList(f64).init(allocator);
 
@@ -153,7 +154,7 @@ fn readFileData(allocator: Allocator) !FileReadResult {
         line_count += 1;
     }
 
-    return FileReadResult{ .list = transpose(list.toOwnedSlice(), 10, line_count), .line_count = line_count };
+    return FileReadResult{ .list = transpose(try list.toOwnedSlice(), 10, line_count), .line_count = line_count };
 }
 
 pub fn main() anyerror!void {
