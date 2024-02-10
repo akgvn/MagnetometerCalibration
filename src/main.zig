@@ -20,7 +20,7 @@ fn calculateTheThing() !CalibrationResult {
     const S12t = S.getSubmatrix(4, 6, 6, 0);
     const S22 = S.getSubmatrix(4, 4, 6, 6);
 
-    const S22_1 = S22.choleskiDecomposed().choleskiInversed();
+    const S22_1 = try (try S22.choleskiDecomposed()).choleskiInversed();
 
     const S22a = mapi.multiplyMatrices(&S22_1, &S12t);
     const S22b = mapi.multiplyMatrices(&S12, &S22a);
@@ -68,7 +68,7 @@ fn calculateTheThing() !CalibrationResult {
 
     const U = Matrix(3, 1).init(.{ v.get(0, 6), v.get(0, 7), v.get(0, 8) });
 
-    const Q_1: Matrix(3, 3) = Q.choleskiDecomposed().choleskiInversed();
+    const Q_1: Matrix(3, 3) = try (try Q.choleskiDecomposed()).choleskiInversed();
 
     // Calculate B = Q-1 * U ( 3x1 = 3x3 * 3x1)
     var B = mapi.multiplyMatrices(&Q_1, &U);

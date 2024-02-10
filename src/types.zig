@@ -88,18 +88,24 @@ pub fn Matrix(comptime rowCount: u32, comptime colCount: u32) type {
         }
 
         extern fn Choleski_LU_Decomposition(A: [*]f64, n: c_int) c_int;
-        pub fn choleskiDecomposed(self: *const Self) Self {
+        pub fn choleskiDecomposed(self: *const Self) !Self {
             comptime assert(Self.isSquare());
             var result = self.*;
-            _ = Choleski_LU_Decomposition(&result.data, Self.cols);
+            const cResult = Choleski_LU_Decomposition(&result.data, Self.cols);
+            if (cResult != 0) {
+                return error.CholeskiLUDecompositionFailed;
+            }
             return result;
         }
 
         extern fn Choleski_LU_Inverse(LU: [*]f64, n: c_int) c_int;
-        pub fn choleskiInversed(self: *const Self) Self {
+        pub fn choleskiInversed(self: *const Self) !Self {
             comptime assert(Self.isSquare());
             var result = self.*;
-            _ = Choleski_LU_Inverse(&result.data, Self.cols);
+            const cResult = Choleski_LU_Inverse(&result.data, Self.cols);
+            if (cResult != 0) {
+                return error.CholeskiLUInverseFailed;
+            }
             return result;
         }
 
@@ -142,19 +148,32 @@ pub fn isMatrix(comptime T: type) bool {
     return isMatrixValue(T) or isMatrixRef(T);
 }
 
-fn areMultipliableMatrices(comptime T: type, comptime K: type) bool {
-    return (isMatrix(T) and isMatrix(K) and (@field(T, "cols") == @field(K, "rows")));
-}
-
 pub fn getDereferencedOrSame(comptime T: type) type {
-    return if (std.meta.trait.isPtrTo(.Struct)(T)) std.meta.Child(T) else T;
+    return switch (@typeInfo(T)) {
+        .Pointer => |p| p.child,
+        else => T,
+    };
 }
 
 pub fn multipliedMatrixType(comptime A: type, comptime B: type) type {
-    const dA = getDereferencedOrSame(A);
-    const dB = getDereferencedOrSame(B);
+    const dereferencedA = getDereferencedOrSame(A);
+    const a1 = switch (@typeInfo(dereferencedA)) {
+        .ErrorUnion => |eu| eu.payload,
+        else => dereferencedA,
+    };
 
-    comptime assert(areMultipliableMatrices(dA, dB));
+    const dereferencedB = getDereferencedOrSame(B);
+    const b1 = switch (@typeInfo(dereferencedB)) {
+        .ErrorUnion => |eu| eu.payload,
+        else => dereferencedB,
+    };
 
-    return Matrix(dA.rows, dB.cols);
+    comptime assert(@typeInfo(a1) != .ErrorUnion);
+    comptime assert(@typeInfo(b1) != .ErrorUnion);
+
+    comptime assert(isMatrix(a1));
+    comptime assert(isMatrix(b1));
+    comptime assert(@field(a1, "cols") == @field(b1, "rows"));
+
+    return Matrix(a1.rows, b1.cols);
 }
